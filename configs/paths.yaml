@@ -1,0 +1,17 @@
+# Filesystem locations. Each member edits this file (or a local copy) to match their machine.
+data_root: data
+raw:
+  wayup: data/raw/wayup
+  kilter: data/raw/kilter
+interim:
+  pose2d: data/interim/pose2d   # exported 2D keypoints (external/pose2d)
+  wham: data/interim/wham       # exported WHAM outputs (external/wham)
+processed:
+  features: data/processed/features
+checkpoints: checkpoints
+results: results
+
+
+# Shared archive on the team Google Drive (see README "Getting the data").
+shared:
+  wayup_zip_sha256: d7215ab006eb6b834f0196a865836e39efea1497d20a95efb5bda4f04bb0e540

@@ -1,0 +1,7 @@
+# Track 1: classical 2D baseline (keypoint inside hold box for a minimum duration).
+fps: 25
+min_duration_s: 0.5
+keypoints: wrist_ankle       # or: fingertip_toe (variant)
+smoothing:
+  method: median             # gaussian | median | none
+  window: 5

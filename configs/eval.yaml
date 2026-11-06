@@ -1,0 +1,4 @@
+# Shared evaluation protocol (see docs/evaluation_protocol.md).
+tiou_thresholds: [0.0, 0.3, 0.5]   # 0.0 means tIoU > 0; others mean tIoU >= t
+average: macro_over_videos
+groups: [limb_type, route, occlusion, experience]

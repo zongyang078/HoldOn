@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "holdon"
+version = "0.1.0"
+description = "Hand/foot-hold contact detection from monocular climbing video (CS 5330 Team 06)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+    { name = "Zongyang Li" },
+    { name = "Yen-Wei Lin" },
+    { name = "Jinghong Yang" },
+]
+dependencies = [
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "opencv-python>=4.8",
+    "matplotlib>=3.7",
+    "scikit-learn>=1.3",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+# Track 2 temporal models (GRU / 1D-CNN).
+learning = ["torch>=2.1"]
+# M6 learned hold detector.
+yolo = ["ultralytics>=8.0"]
+dev = ["pytest>=7.4"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

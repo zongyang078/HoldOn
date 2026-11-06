@@ -1,0 +1,5 @@
+# Track 3: 3D pipeline (WHAM body + wall pose from homography).
+focal_length_px: null        # null = estimate; camera intrinsics are unknown
+distance_threshold_m: 0.05
+min_duration_frames: 5
+fallback_2p5d: false         # use wall-coordinate distance if 3D wall pose is unreliable

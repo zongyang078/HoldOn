@@ -1,0 +1,39 @@
+# --- Local AI assistant instructions (kept out of the repository) ---
+/CLAUDE.md
+
+# --- Data, weights and bulky outputs (never commit) ---
+/data/
+/checkpoints/
+/results/*
+!/results/.gitkeep
+!/results/tables/
+!/results/figures/
+*.mp4
+*.mov
+*.avi
+*.npz
+*.npy
+*.pkl
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.zip
+participant_form_data.csv
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.venv/
+venv/
+.env
+
+# --- Notebooks / editors / OS ---
+.ipynb_checkpoints/
+.vscode/
+.idea/
+.DS_Store

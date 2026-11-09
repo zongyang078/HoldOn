@@ -195,6 +195,10 @@ _TODO._
 
 ### Collaboration
 - Each member commits from their own GitHub account, on feature branches, merged through pull requests.
+- `main` is protected and maintained by the team lead (Zongyang Li). Other members do not push to `main`;
+  they work on a branch named `<type>/<short-topic>`, e.g. `feature/track1-baseline`, `fix/loader-endframe`,
+  `docs/kilter-protocol`, and open a pull request. The lead reviews and merges it (see `.github/CODEOWNERS`).
+  Run `python3 -m pytest` before requesting review.
 - Small, focused commits with descriptive messages.
 - Discuss with the team before adding heavy dependencies or changing the shared event format or evaluation protocol.
 

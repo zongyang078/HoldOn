@@ -200,4 +200,16 @@ _TODO._
 
 ## Contributions
 
-_TODO: per-member contributions._
+Each member owns one line of the project end to end:
+
+| Member | Line | Owns |
+| --- | --- | --- |
+| Zongyang Li | 2D line | Data (The Way Up loading, Drive distribution), Track 1 baseline and fingertip variant, Kilter recording, labels and hold detection |
+| Yen-Wei Lin | Learning line | Evaluation module, Track 2 classifier, ablation, grouped analysis, failure gallery |
+| Jinghong Yang | 3D line | Track 3 (WHAM, wall homography, 3D distances), system integration, demo video |
+
+### Phase 1 (proposal)
+
+- **Zongyang Li:** GitHub repository and environment; dataset setup (Drive sharing, loader, schema docs); dataset and sample slides.
+- **Yen-Wei Lin:** evaluation protocol (metrics, leave-one-participant-out splits); related-work review; project plan.
+- **Jinghong Yang:** problem definition; three-track method design; 3D feasibility study (WHAM, wall homography).

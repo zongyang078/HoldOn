@@ -115,14 +115,19 @@ Optional (stretch). Its website is currently unreachable. Do not build anything 
 
 ---
 
-## 5. Roles (placeholders until confirmed)
+## 5. Roles (confirmed 2026-11-08)
 
 Each person owns one line end to end:
 
-- **A — 3D line:** Track 3 (M4), system integration, demo video
-- **B — 2D line:** data (M1), Track 1 (M2), fingertip variant, Kilter labels, dataset docs
-- **C — Learning line:** evaluation (M3), Track 2 (M5), ablation, grouped analysis, failure gallery
-- **Zongyang:** Kilter video recording (in addition to her line)
+- **A — 3D line (Jinghong Yang):** Track 3 (M4), system integration, demo video
+- **B — 2D line (Zongyang Li):** data (M1), Track 1 (M2), fingertip variant, Kilter recording and labels, Kilter hold detection (M6; the YOLO comparison is optional), dataset docs
+- **C — Learning line (Yen-Wei Lin):** evaluation (M3), Track 2 (M5), ablation, grouped analysis, failure gallery
+
+Phase 1 contributions (as on the slides):
+
+- **Zongyang Li:** GitHub repo and environment; dataset setup (Drive sharing, loader, schema docs); dataset and sample slides
+- **Yen-Wei Lin:** evaluation protocol (metrics, LOPO splits); related-work review; project plan
+- **Jinghong Yang:** problem definition; three-track method design; 3D feasibility (WHAM, wall homography)
 
 Every member commits from their own GitHub account; contributions must be traceable through commits.
 
@@ -149,12 +154,12 @@ Every member commits from their own GitHub account; contributions must be tracea
 
 ## 7. Phase plan
 
-| Phase | A: 3D line | B: 2D line | C: Learning line | Due |
+| Phase | A: 3D line (Yang) | B: 2D line (Zongyang) | C: Learning line (Lin) | Due |
 | --- | --- | --- | --- | --- |
 | 0 Setup | WHAM running on one clip in Colab | Download data subset; schema docs; alignment check; data loader | Repo skeleton; evaluation protocol spec | Before Nov 9 |
 | 1 Proposal | Slides/video | Slides/video | Slides/video | Nov 9 |
 | 2 First results | WHAM inference; wall pose; per-frame 3D distances | Reproduce Track 1 vs the paper's numbers; Kilter labeling script | Evaluation module; Track 2 v1 (2D overlap + stillness) | Nov 23 |
-| 3 Refinement | Finalize 3D distances; Track 3 on Kilter; timeline/overlay visualizations | Fingertip variant; Kilter labels; cross-dataset test | Track 2 with 3D features; ablation; grouped analysis | First half of Phase 3 |
+| 3 Refinement | Finalize 3D distances; Track 3 on Kilter; timeline/overlay visualizations | Fingertip variant; Kilter labels; Kilter hold detection (HSV, optional YOLO); cross-dataset test | Track 2 with 3D features; ablation; grouped analysis | First half of Phase 3 |
 | 4 Delivery | Integration; demo video | Dataset description + drive link; data unit tests | Final tables; failure gallery; evaluation unit tests | Dec 8 |
 
 ---

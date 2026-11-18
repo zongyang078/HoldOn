@@ -103,7 +103,7 @@ Optional (stretch). Its website is currently unreachable. Do not build anything 
 | Module | Work | Main techniques |
 | --- | --- | --- |
 | M1 Data | Load The Way Up; schema docs; alignment check; Kilter recording conversion and labeling script | OpenCV video I/O, ffmpeg, `cv2.selectROIs` |
-| M2 Track 1 | Whole-body 2D pose; hold-box overlap + 0.5 s persistence rule; fingertip/toe variant | MMPose (RTMPose-WholeBody) or ViTPose; trajectory smoothing (Gaussian/median) |
+| M2 Track 1 | Whole-body 2D pose; hold-box overlap + 0.5 s persistence rule; fingertip/toe variant | RTMW whole-body (rtmlib, ONNX) and ViTPose++ (transformers), shared YOLOX detector, see `docs/pose2d_format.md`; trajectory smoothing (Gaussian/median) |
 | M3 Evaluation | Event matching, P/R/F1, grouped stats, timelines and overlay videos | NumPy, pandas, matplotlib |
 | M4 Track 3 | WHAM inference (fixed camera → `--estimate_local_only`); wall pose via `cv2.decomposeHomographyMat`; per-frame 3D limb-to-wall/hold distance | WHAM, SMPL, homography + RANSAC |
 | M5 Track 2 | Features (2D overlap, stillness via optical flow or keypoint velocity, 3D distance); classifier training; ablation | scikit-learn SVM reference; PyTorch GRU or 1D-CNN |
@@ -130,6 +130,7 @@ Phase 1 contributions (as on the slides):
 - **Jinghong Yang:** problem definition; three-track method design; 3D feasibility (WHAM, wall homography)
 
 Every member commits from their own GitHub account; contributions must be traceable through commits.
+Branches: one long-lived branch per line (`feature/3d-line`, `feature/2d-line`, `feature/learning-line`), merged into `main` through pull requests at every milestone; see README "Collaboration".
 
 ---
 
@@ -173,4 +174,4 @@ Every member commits from their own GitHub account; contributions must be tracea
 5. Yan et al., CIMI4D, CVPR 2023 — arXiv 2303.17948; Yan et al., ClimbingCap, CVPR 2025 — arXiv 2503.21268
 6. Bakar et al., Training-Free Hold-Usage Detection with Foundation Pose Models, arXiv 2609.30026 (protocol reference only)
 
-Tools: MMPose, ViTPose, WHAM + SMPL/SMPLify (accounts registered by Zoe), Ultralytics YOLO, OpenCV, PyTorch, NumPy, pandas.
+Tools: rtmlib (RTMW / RTMPose), ViTPose (HuggingFace transformers), WHAM + SMPL/SMPLify (accounts registered by Zoe), Ultralytics YOLO, OpenCV, PyTorch, NumPy, pandas.

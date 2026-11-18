@@ -167,7 +167,7 @@ _TODO._
 }
 ```
 
-- **Third-party models:** WHAM, SMPL, MMPose / ViTPose and Ultralytics YOLO keep their own licenses;
+- **Third-party models:** WHAM, SMPL, RTMW (OpenMMLab) / ViTPose and Ultralytics YOLO keep their own licenses;
   we do not redistribute their weights.
 
 ## Team conventions
@@ -194,11 +194,24 @@ _TODO._
 - Prefer OpenCV-compatible implementations.
 
 ### Collaboration
-- Each member commits from their own GitHub account, on feature branches, merged through pull requests.
-- `main` is protected and maintained by the team lead (Zongyang Li). Other members do not push to `main`;
-  they work on a branch named `<type>/<short-topic>`, e.g. `feature/track1-baseline`, `fix/loader-endframe`,
-  `docs/kilter-protocol`, and open a pull request. The lead reviews and merges it (see `.github/CODEOWNERS`).
-  Run `python3 -m pytest` before requesting review.
+- Each member commits from their own GitHub account and works on **one long-lived branch per line**:
+
+  | Branch | Owner | Scope |
+  | --- | --- | --- |
+  | `feature/3d-line` | Jinghong Yang | Track 3 (WHAM, wall pose, 3D distances), integration, demo |
+  | `feature/2d-line` | Zongyang Li | data, 2D pose export, Track 1, Kilter recording/labels/hold detection |
+  | `feature/learning-line` | Yen-Wei Lin | evaluation, Track 2, ablation, grouped analysis |
+
+- `main` is protected and maintained by the team lead (Zongyang Li); nobody pushes to it directly.
+  Merge your line branch into `main` through a pull request **at every milestone** (at least before each
+  phase deadline, and whenever a teammate needs your code), not only at the end. The lead reviews and
+  merges (see `.github/CODEOWNERS`). Run `python3 -m pytest` before requesting review.
+- After a merge, keep working on the same branch and first bring in the others' work:
+  `git switch <your-branch> && git pull && git merge origin/main`.
+- Open a short-lived extra branch only for a risky experiment (`exp/<topic>`, e.g. `exp/yolo-holds`) or an
+  urgent fix to `main` (`fix/<topic>`).
+- Keep edits to shared files (`src/holdon/events.py`, `configs/`, `README.md`, `docs/PROJECT_CONTEXT.md`)
+  small and merge them soon, to avoid conflicts.
 - Small, focused commits with descriptive messages.
 - Discuss with the team before adding heavy dependencies or changing the shared event format or evaluation protocol.
 

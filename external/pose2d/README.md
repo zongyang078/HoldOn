@@ -24,7 +24,8 @@ backends, copies `wayup.zip` from the team Drive and writes the outputs back to 
 ## Setup (GCP VM or any Linux machine with an NVIDIA GPU)
 
 ```bash
-python3 -m venv ~/pose-env && source ~/pose-env/bin/activate
+sudo apt-get update && sudo apt-get install -y libgl1 libglib2.0-0   # OpenCV needs libGL on server images
+python3 -m venv ~/pose-env && source ~/pose-env/bin/activate   # Python 3.12 recommended (uv venv -p 3.12)
 pip3 install -r external/pose2d/requirements.txt
 pip3 uninstall -y onnxruntime onnxruntime-gpu   # rtmlib pulls in the CPU build, which shadows the GPU one
 pip3 install "onnxruntime-gpu[cuda,cudnn]==1.32.0"   # bundles CUDA 13 + cuDNN 9 libraries
@@ -54,4 +55,19 @@ auto-filled `MANIFEST.md`; fill in "Created by" and "Notes" before uploading the
 An interrupted run resumes when restarted with the same `--date`: finished videos are skipped and
 each file is written atomically. Run from a committed checkout so the manifest records a clean commit.
 
-Measured on CPU (Apple M-series, for reference only): RTMW about 6 fps, ViTPose++-H about 1.5 fps.
+Measured speed (frames per second, including video decoding and detection):
+
+| Hardware | RTMW-x 384 | ViTPose++-H | All 22 videos, both models |
+| --- | --- | --- | --- |
+| GCP n1-standard-4 + T4 | 14 | 5 | about 2 h 45 min |
+| Apple M-series CPU | 6 | 1.5 | not practical |
+
+## Known issues
+
+- **Slow RTMW download on cloud VMs:** `download.openmmlab.com` can be as slow as 600 kB/s from GCP
+  (the 230 MB model takes several minutes and looks like a hang). Copy `~/.cache/rtmlib/hub/checkpoints/*.onnx`
+  from a machine that already has them instead.
+- **macOS tarballs:** a `tar` made on a Mac adds `._*` metadata files next to every video; delete them
+  (`find data/raw/wayup -name "._*" -delete`). The script ignores them anyway, but they confuse file counts.
+- **onnxruntime on CPU by accident:** `rtmlib` installs the CPU `onnxruntime`, which shadows
+  `onnxruntime-gpu`; the script refuses to run with `--device cuda` in that case (see Setup).

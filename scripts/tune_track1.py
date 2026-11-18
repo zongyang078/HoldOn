@@ -41,10 +41,10 @@ def main() -> None:
     logging.getLogger("holdon.data.wayup").setLevel(logging.ERROR)  # known label quirks
 
     cfg = load_config(args.config)
-    cfg["pose_version"] = args.pose_version or cfg["pose_version"]
     cfg["keypoints"] = args.keypoints or cfg["keypoints"]
     thresholds = [float(t) for t in load_config(args.eval_config)["tiou_thresholds"]]
     paths = load_config(args.paths)
+    cfg["pose_version"] = args.pose_version or cfg.get("pose_version") or paths["versions"]["pose2d"]
     root = Path(paths["raw"]["wayup"])
     pose_dir = Path(paths["interim"]["pose2d"]) / cfg["pose_version"]
     out_dir = Path(paths["results"]) / "track1" / f"{cfg['pose_version']}_{cfg['keypoints']}"

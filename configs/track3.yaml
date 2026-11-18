@@ -1,5 +1,10 @@
-# Track 3: 3D pipeline (WHAM body + wall pose from homography).
+# Track 3: 3D pipeline (owner: 3D line). WHAM body + wall pose from the bolt-hole homography.
 focal_length_px: null        # null = estimate; camera intrinsics are unknown
+fallback_2p5d: false         # true = distances in the wall plane (method "2.5d" in docs/interfaces.md)
+
+# Contact rule applied to the distance files (holdon.models.rules.events_from_distances),
+# same structure as Track 1 so the tracks are comparable. Tune on LOPO training folds only.
 distance_threshold_m: 0.05
-min_duration_frames: 5
-fallback_2p5d: false         # use wall-coordinate distance if 3D wall pose is unreliable
+assign: nearest
+min_duration_s: 0.5
+merge_gap_frames: 2

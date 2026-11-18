@@ -1,7 +1,7 @@
-"""Read per-video files exported by external models (2D pose, WHAM).
+"""Read per-video files produced outside the main package (2D pose, Track 3 distances).
 
-This module never imports MMPose, rtmlib, transformers or WHAM; it only reads their output files.
-The 2D pose file format is specified in docs/pose2d_format.md.
+This module never imports rtmlib, transformers or WHAM; it only reads their output files.
+Formats: docs/pose2d_format.md (2D pose) and docs/interfaces.md (3D distances).
 """
 
 from __future__ import annotations
@@ -104,3 +104,65 @@ def _validate(pose: Pose2D, path: str | Path) -> None:
 def pose2d_path(pose_dir: str | Path, video_id: str) -> Path:
     """Path of one video's pose file inside a version folder, e.g. ``.../rtmw-x-384_2026-11-19``."""
     return Path(pose_dir) / f"{video_id}.npz"
+
+
+# --------------------------------------------------------------------------- 3D distances (Track 3)
+
+DISTANCE3D_FORMAT_VERSION = 1
+DISTANCE3D_METHODS = ("3d", "2.5d")
+
+
+@dataclass(frozen=True)
+class Distance3D:
+    """Per-frame limb-to-hold distances in metres for one video (Track 3 output, Track 2 input).
+
+    Specified in docs/interfaces.md. Frame ``t`` is frame ``t`` of the processed video; NaN where
+    the distance is unknown. Limb order is ``holdon.events.LIMBS``; hold order is ``hold_ids``.
+    """
+
+    video_id: str
+    method: str  # "3d" (WHAM + wall pose) or "2.5d" (wall-plane fallback)
+    hold_ids: tuple[str, ...]
+    dist: np.ndarray  # (T, 4, H) float32, metres
+
+    @property
+    def num_frames(self) -> int:
+        """Number of frames covered by the file."""
+        return int(self.dist.shape[0])
+
+    def limb(self, name: str) -> np.ndarray:
+        """(T, H) distances of one limb, e.g. ``"left_hand"``."""
+        from holdon.events import LIMBS
+
+        return self.dist[:, LIMBS.index(name)]
+
+
+def load_distance3d(path: str | Path) -> Distance3D:
+    """Load and validate one ``<video_id>.npz`` written by the Track 3 pipeline."""
+    from holdon.events import LIMBS
+
+    with np.load(Path(path), allow_pickle=False) as data:
+        version = int(data["format_version"])
+        if version != DISTANCE3D_FORMAT_VERSION:
+            raise ValueError(f"{path}: format_version {version}, expected {DISTANCE3D_FORMAT_VERSION}")
+        out = Distance3D(
+            video_id=str(data["video_id"]),
+            method=str(data["method"]),
+            hold_ids=tuple(str(h) for h in data["hold_ids"]),
+            dist=data["dist"].astype(np.float32),
+        )
+        limbs = tuple(str(x) for x in data["limbs"])
+    if limbs != LIMBS:
+        raise ValueError(f"{path}: limbs {limbs}, expected {LIMBS}")
+    if out.method not in DISTANCE3D_METHODS:
+        raise ValueError(f"{path}: method {out.method!r}, expected one of {DISTANCE3D_METHODS}")
+    if out.dist.ndim != 3 or out.dist.shape[1:] != (len(LIMBS), len(out.hold_ids)):
+        raise ValueError(f"{path}: dist has shape {out.dist.shape}, expected (T, 4, {len(out.hold_ids)})")
+    if np.nanmin(out.dist, initial=0.0) < 0:
+        raise ValueError(f"{path}: negative distances")
+    return out
+
+
+def distance3d_path(version_dir: str | Path, video_id: str) -> Path:
+    """Path of one video's distance file inside a version folder."""
+    return Path(version_dir) / f"{video_id}.npz"

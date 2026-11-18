@@ -33,6 +33,7 @@ def main() -> None:
 
     cfg = load_config(args.config)
     paths = load_config(args.paths)
+    cfg["pose_version"] = cfg.get("pose_version") or paths["versions"]["pose2d"]
     root = Path(paths["raw"]["wayup"])
     pose_dir = Path(paths["interim"]["pose2d"]) / cfg["pose_version"]
     out_dir = Path(paths["results"]) / "track1" / f"{cfg['pose_version']}_{cfg['keypoints']}"

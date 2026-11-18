@@ -48,27 +48,9 @@ Track 2 consumes Track 3's 3D distances, so Track 3 inference must run early.
 - Content: 22 videos (11 participant recordings of 10 climbers × 2 routes: "orange" 4c and "green" 5a), 8.5 m high 0° vertical planar indoor wall, 940 hold usages (481 hands, 459 feet), ~1547 s total. Hands are >50% occluded in roughly half of their contact frames; feet ~2%.
 - Labels were made by a climbing coach on the **processed** videos.
 
-**Known file layout** (from the Zenodo file browser; verify against the real files):
-
-```
-dataset.zip
-├── p1/ … p11/                      # one folder per participant recording (verify exact names/count)
-│   ├── green.mp4                   # processed: 720×1280 (portrait), 25 fps, stabilized — USE THIS
-│   ├── green_large.mp4             # 4K / 50 fps original — NOT needed, skip
-│   ├── green_holdUsage.csv         # contact labels: limb, hold, start/end frame, occluded ranges
-│   ├── green_routeAnnotation.json  # hold bounding boxes (may include homography; verify)
-│   ├── green_bolt_holes.json       # reference points for the homography
-│   └── orange.mp4, orange_large.mp4, orange_holdUsage.csv, orange_routeAnnotation.json, orange_bolt_holes.json
-├── participant_form_data.csv       # participant demographics and experience; grouped analysis only
-├── topo_green.png
-└── topo_orange.png
-```
-
-**Column names and JSON schemas are not yet confirmed.** The first data task is to inspect the real files and document their exact schema in `docs/` before writing loaders. Do not guess field names.
+**Files:** inspected and documented in [dataset_schema.md](dataset_schema.md) (layout, CSV/JSON schemas, quirks such as `p2a`/`p2b` being the same climber). Loader: `holdon.data.wayup`.
 
 **Distribution:** everyone gets the data from the team Google Drive as `wayup.zip` (546.5 MB, 92 files: the original files minus `*_large.mp4`), installed with `scripts/install_data.py`. See the README.
-
-**First sanity check:** draw the hold boxes from `*_routeAnnotation.json` on the first and last frame of each processed video and confirm they line up.
 
 ### 2.2 Self-recorded Kilter board videos (generalization + demo)
 
@@ -89,11 +71,7 @@ Optional (stretch). Its website is currently unreachable. Do not build anything 
 
 ## 3. Evaluation protocol (shared by all tracks)
 
-- **Event-level matching:** a predicted event may only match a ground-truth event with the **same limb and same hold**. Among eligible pairs, compute temporal IoU `tIoU = |Tp ∩ Tg| / |Tp ∪ Tg|` on frame intervals. Greedy matching ordered by prediction score; each event used at most once.
-- TP = matched prediction, FP = unmatched prediction, FN = unmatched ground truth. No true negatives (most holds are never used).
-- Report Precision, Recall, F1 at tIoU > 0, ≥ 0.3, ≥ 0.5, plus mean tIoU over matched events.
-- Macro-average over videos.
-- Breakdowns: hands vs feet, by route, occluded vs visible (occlusion-stratified frame recall using the dataset's occlusion ranges), by climber experience.
+Fixed rules (matching, metrics, `w` events, breakdowns, tuning): [evaluation_protocol.md](evaluation_protocol.md). Summary: same limb and hold, temporal IoU, greedy by score; P / R / F1 at tIoU > 0, ≥ 0.3, ≥ 0.5, macro over the 22 videos.
 - Reference numbers: The Way Up's best baseline (ViTPose) reports ~86.6% accuracy at tIoU > 0 and ~69% at tIoU > 0.5 (their accuracy definition differs from F1; compare carefully). The 2026 "Training-Free" preprint (arXiv 2609.30026) has internally inconsistent result tables — borrow its protocol ideas, do not treat its numbers as a target.
 
 ---
@@ -111,7 +89,9 @@ Optional (stretch). Its website is currently unreachable. Do not build anything 
 
 **Key technical risk (Track 3):** The Way Up camera intrinsics are unknown. Use an estimated focal length and validate the recovered wall plane against known hold spacing; fallback is a 2.5D distance in wall coordinates.
 
-**WHAM environment:** heavy dependencies and needs a GPU (Colab is fine). Keep WHAM in its own environment (or Colab notebook) and have it **export per-video outputs to files** (e.g. `.npz` with SMPL joints/vertices per frame). The main package only reads those files and never imports WHAM directly.
+**WHAM environment:** heavy dependencies and needs a GPU (Colab is fine). Keep WHAM in its own environment (or Colab notebook). The 3D line delivers per-video **distance files** (format in [interfaces.md](interfaces.md) section 6); the main package only reads those files and never imports WHAM.
+
+**Interfaces between modules** (pose files, events, evaluation API, distance files, official data versions): [interfaces.md](interfaces.md).
 
 ---
 
@@ -130,7 +110,7 @@ Phase 1 contributions (as on the slides):
 - **Jinghong Yang:** problem definition; three-track method design; 3D feasibility (WHAM, wall homography)
 
 Every member commits from their own GitHub account; contributions must be traceable through commits.
-Branches: one long-lived branch per line (`feature/3d-line`, `feature/2d-line`, `feature/learning-line`), merged into `main` through pull requests at every milestone; see README "Collaboration".
+Branches: one long-lived branch per line (`feature/3d-line`, `feature/2d-line`, `feature/learning-line`), merged into `main` through pull requests at every milestone; see README "Git".
 
 ---
 
@@ -162,6 +142,12 @@ Branches: one long-lived branch per line (`feature/3d-line`, `feature/2d-line`, 
 | 2 First results | WHAM inference; wall pose; per-frame 3D distances | Reproduce Track 1 vs the paper's numbers; Kilter labeling script | Evaluation module; Track 2 v1 (2D overlap + stillness) | Nov 23 |
 | 3 Refinement | Finalize 3D distances; Track 3 on Kilter; timeline/overlay visualizations | Fingertip variant; Kilter labels; Kilter hold detection (HSV, optional YOLO); cross-dataset test | Track 2 with 3D features; ablation; grouped analysis | First half of Phase 3 |
 | 4 Delivery | Integration; demo video | Dataset description + drive link; data unit tests | Final tables; failure gallery; evaluation unit tests | Dec 8 |
+
+**Status 2026-11-18 (Phase 2):**
+
+- B: done — data loader and docs; 2D pose export pipeline (RTMW and ViTPose++, climber restricted to the route region; full run of format v2 in progress, then uploaded to the Drive); Track 1 code with LOPO tuning and reference scoring. First Track 1 results (RTMW, LOPO-tuned, macro F1 at tIoU >0 / ≥0.3 / ≥0.5): wrist/ankle 0.637 / 0.552 / 0.417, fingertip/toe 0.760 / 0.692 / 0.576 (`results/tables/`). Feet gain most from toe keypoints (F1@>0 0.51 → 0.84); hands keep recall ~0.93 at precision ~0.6, i.e. false contacts are the main error, as expected. Open — ViTPose run for the paper comparison, screenshots, Kilter labeling script (may move to Phase 3).
+- C: evaluation starts from the reference scoring in `holdon/models/track1_tuning.py` (interfaces §5); Track 2 v1 can use the pose files now.
+- A: WHAM + distance files to the format in interfaces §6.
 
 ---
 

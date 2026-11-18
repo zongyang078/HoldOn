@@ -1,7 +1,7 @@
 # Track 1: classical 2D baseline (keypoint inside hold box for a minimum duration).
 # Defaults below are starting values; tune them on LOPO training folds only.
 
-pose_version: rtmw-x-384_2026-11-18   # folder under paths.interim.pose2d
+pose_version: null     # null = paths.yaml versions.pose2d; or a folder name, e.g. vitpose-plus-huge_2026-11-18
 keypoints: wrist_ankle                 # or: fingertip_toe (variant, needs a coco_wholebody133 pose version)
 
 # Keypoint confidence below which a frame counts as missing. Scales differ per model

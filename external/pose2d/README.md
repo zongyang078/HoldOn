@@ -71,3 +71,14 @@ Measured speed (frames per second, including video decoding and detection):
   (`find data/raw/wayup -name "._*" -delete`). The script ignores them anyway, but they confuse file counts.
 - **onnxruntime on CPU by accident:** `rtmlib` installs the CPU `onnxruntime`, which shadows
   `onnxruntime-gpu`; the script refuses to run with `--device cuda` in that case (see Setup).
+
+## Possible speed-ups (not implemented yet)
+
+The current loop is one frame, one box, batch size 1, fp32, and each model repeats the detection.
+Worth doing before the next full rerun (e.g. new pose model or Kilter videos):
+
+1. ViTPose in fp16 on GPU (about 2× on T4 tensor cores; compare keypoints against fp32 first).
+2. Batch 16–32 frames per forward pass (another 2–3× for ViTPose).
+3. Reuse `all_boxes` from an existing RTMW run instead of running YOLOX again (also guarantees
+   identical boxes for both models).
+4. ViTPose++-B / -L instead of -H trades accuracy for 2–4× speed; keep -H for the paper comparison.

@@ -26,7 +26,8 @@ backends, copies `wayup.zip` from the team Drive and writes the outputs back to 
 ```bash
 python3 -m venv ~/pose-env && source ~/pose-env/bin/activate
 pip3 install -r external/pose2d/requirements.txt
-pip3 uninstall -y onnxruntime && pip3 install onnxruntime-gpu==1.32.0
+pip3 uninstall -y onnxruntime onnxruntime-gpu   # rtmlib pulls in the CPU build, which shadows the GPU one
+pip3 install "onnxruntime-gpu[cuda,cudnn]==1.32.0"   # bundles CUDA 13 + cuDNN 9 libraries
 python3 -c "import onnxruntime as o; print(o.get_available_providers())"   # must list CUDAExecutionProvider
 python3 -c "import torch; print(torch.cuda.is_available())"                 # must print True
 ```

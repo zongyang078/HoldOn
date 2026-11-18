@@ -4,9 +4,9 @@ Runs in the separate pose environment (see README.md), not in the main holdon en
 and deliberately does not import ``holdon``. The output format is documented in
 ``docs/pose2d_format.md`` and read by ``holdon.data.external.load_pose2d``.
 
-Pipeline per frame: YOLOX person detection (rtmlib) -> pick the climber's box -> pose model on
-that single box. Both backends share the same detector and person selection, so their outputs
-differ only in the pose model.
+Pipeline per frame: YOLOX person detection (rtmlib) -> pick the climber's box (on the route, tracked
+over time; see select_climber) -> pose model on that single box. Both backends share the same
+detector and person selection, so their outputs differ only in the pose model.
 
 Backends:
     rtmw     RTMW whole-body (133 COCO-WholeBody keypoints incl. fingertips and toes), via rtmlib.
@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import json
 import logging
 import platform
 import re
@@ -33,9 +34,12 @@ from typing import Callable
 import cv2
 import numpy as np
 
-FORMAT_VERSION = 1
+FORMAT_VERSION = 2
 ROUTES = ("green", "orange")
 RECORDING_RE = re.compile(r"p\d+[a-z]?")
+ROUTE_MARGIN = 80.0  # px added around the hold boxes to form the route region
+MIN_INSIDE = 0.5  # min fraction of a person box inside the route region to count as the climber
+MAX_PERSONS = 8  # person boxes stored per frame (all_boxes)
 
 # YOLOX detector shared by both backends (rtmlib "performance" preset).
 YOLOX_URL = (
@@ -88,21 +92,58 @@ def box_iou(a: np.ndarray, b: np.ndarray) -> float:
     return float(inter / union) if union > 0 else 0.0
 
 
-def select_climber(boxes: np.ndarray, previous: np.ndarray | None, min_iou: float = 0.1) -> int | None:
-    """Pick the climber among detected person boxes.
+def route_region(annotation: Path, margin: float = ROUTE_MARGIN) -> np.ndarray:
+    """Bounding box ``[x1, y1, x2, y2]`` of all hold boxes of a route, grown by ``margin`` pixels.
 
-    Follows the previous frame's box (highest IoU) when one overlaps it by at least ``min_iou``;
-    otherwise takes the largest box. Returns the index into ``boxes`` or ``None`` if empty.
+    Reads ``{route}_routeAnnotation.json`` (schema in docs/dataset_schema.md). The climber is always
+    on the route, while belayers and bystanders stand on the floor beside it.
+    """
+    holds = json.loads(annotation.read_text())["holds"]
+    xs = [h[c]["x"] for h in holds for c in ("topLeftCorner", "bottomRightCorner")]
+    ys = [h[c]["y"] for h in holds for c in ("topLeftCorner", "bottomRightCorner")]
+    return np.array([min(xs) - margin, min(ys) - margin, max(xs) + margin, max(ys) + margin], dtype=np.float32)
+
+
+def fraction_inside(box: np.ndarray, region: np.ndarray) -> float:
+    """Fraction of ``box`` area that lies inside ``region`` (both ``[x1, y1, x2, y2]``)."""
+    ix = max(0.0, min(box[2], region[2]) - max(box[0], region[0]))
+    iy = max(0.0, min(box[3], region[3]) - max(box[1], region[1]))
+    area = (box[2] - box[0]) * (box[3] - box[1])
+    return float(ix * iy / area) if area > 0 else 0.0
+
+
+def select_climber(
+    boxes: np.ndarray,
+    previous: np.ndarray | None,
+    region: np.ndarray | None,
+    min_iou: float = 0.1,
+    min_inside: float = MIN_INSIDE,
+) -> int | None:
+    """Pick the climber among detected person boxes, or ``None`` if no box qualifies.
+
+    1. Only boxes with at least ``min_inside`` of their area inside the route ``region`` are
+       candidates (all boxes if ``region`` is None).
+    2. Follow the previous climber box: the candidate with the highest IoU if >= ``min_iou``,
+       else the candidate whose centre is closest to the previous centre.
+    3. Without a previous box, take the largest candidate.
+    Never falling back to an off-route box is what keeps the tracker off the belayer when the
+    climber is small and briefly undetected high on the wall.
     """
     if len(boxes) == 0:
         return None
+    candidates = [i for i, b in enumerate(boxes) if region is None or fraction_inside(b, region) >= min_inside]
+    if not candidates:
+        return None
     if previous is not None:
-        ious = [box_iou(b, previous) for b in boxes]
+        ious = [box_iou(boxes[i], previous) for i in candidates]
         best = int(np.argmax(ious))
         if ious[best] >= min_iou:
-            return best
-    areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
-    return int(np.argmax(areas))
+            return candidates[best]
+        centre = (previous[:2] + previous[2:]) / 2
+        dists = [np.linalg.norm((boxes[i, :2] + boxes[i, 2:]) / 2 - centre) for i in candidates]
+        return candidates[int(np.argmin(dists))]
+    areas = [(boxes[i, 2] - boxes[i, 0]) * (boxes[i, 3] - boxes[i, 1]) for i in candidates]
+    return candidates[int(np.argmax(areas))]
 
 
 # --------------------------------------------------------------------------- backends
@@ -168,6 +209,7 @@ def process_video(
     pose: PoseFn,
     num_keypoints: int,
     max_frames: int | None,
+    region: np.ndarray | None,
 ) -> dict[str, np.ndarray]:
     """Run detection + pose on every frame of one video and return the arrays to save."""
     cap = cv2.VideoCapture(str(video))
@@ -183,6 +225,7 @@ def process_video(
     scores = np.zeros((n, num_keypoints), dtype=np.float32)
     bbox = np.full((n, 4), np.nan, dtype=np.float32)
     num_persons = np.zeros(n, dtype=np.int16)
+    all_boxes = np.full((n, MAX_PERSONS, 4), np.nan, dtype=np.float32)
 
     previous: np.ndarray | None = None
     t0 = time.time()
@@ -193,7 +236,8 @@ def process_video(
             break
         boxes = np.asarray(detect(frame), dtype=np.float32).reshape(-1, 4)
         num_persons[index] = len(boxes)
-        pick = select_climber(boxes, previous)
+        all_boxes[index, : min(len(boxes), MAX_PERSONS)] = boxes[:MAX_PERSONS]
+        pick = select_climber(boxes, previous, region)
         if pick is not None:
             previous = boxes[pick]
             kpts, conf = pose(frame, previous)
@@ -206,13 +250,16 @@ def process_video(
     cap.release()
     if index < n:
         logging.warning("%s: only %d of %d frames decodable; truncating", video, index, n)
-        keypoints, scores, bbox, num_persons = keypoints[:index], scores[:index], bbox[:index], num_persons[:index]
+        keypoints, scores, bbox = keypoints[:index], scores[:index], bbox[:index]
+        num_persons, all_boxes = num_persons[:index], all_boxes[:index]
 
     return {
         "keypoints": keypoints,
         "scores": scores,
         "bbox": bbox,
         "num_persons": num_persons,
+        "all_boxes": all_boxes,
+        "route_region": region if region is not None else np.full(4, np.nan, dtype=np.float32),
         "fps": np.float32(fps),
         "width": np.int32(width),
         "height": np.int32(height),
@@ -221,7 +268,7 @@ def process_video(
 
 
 def list_videos(root: Path, only: set[str] | None) -> list[tuple[str, Path]]:
-    """Return ``(video_id, path)`` for every processed video under the dataset root."""
+    """Return ``(video_id, video path)`` for every processed video under the dataset root."""
     out = []
     for rec in sorted(p.name for p in root.iterdir() if p.is_dir() and RECORDING_RE.fullmatch(p.name)):
         for route in ROUTES:
@@ -289,6 +336,8 @@ def main() -> None:
     parser.add_argument("--only", nargs="*", help="video ids to process, e.g. p1_green p2a_orange")
     parser.add_argument("--max-frames", type=int, help="process only the first N frames (smoke test)")
     parser.add_argument("--overwrite", action="store_true", help="redo videos that already have output")
+    parser.add_argument("--no-route-filter", action="store_true",
+                        help="do not restrict the climber to the route region from *_routeAnnotation.json")
     parser.add_argument("--date", default=dt.date.today().isoformat(),
                         help="version date in the output folder name <model>_<date>; reuse it to resume a run")
     args = parser.parse_args()
@@ -319,10 +368,18 @@ def main() -> None:
     for vid, path in videos:
         target = out_dir / f"{vid}.npz"
         if target.exists() and not args.overwrite:
-            logging.info("skip %s (exists)", vid)
-            continue
+            with np.load(target) as existing:
+                version = int(existing["format_version"])
+            if version == FORMAT_VERSION:
+                logging.info("skip %s (exists)", vid)
+                continue
+            logging.info("%s: existing file has format_version %d, redoing", vid, version)
         logging.info("%s -> %s", vid, target)
-        arrays = process_video(path, detector, pose, len(names), args.max_frames)
+        annotation = path.with_name(f"{path.stem}_routeAnnotation.json")
+        region = route_region(annotation) if annotation.exists() and not args.no_route_filter else None
+        if region is None:
+            logging.warning("  %s: no route filter (climber = largest / tracked box)", vid)
+        arrays = process_video(path, detector, pose, len(names), args.max_frames, region)
         missing = int(np.isnan(arrays["bbox"][:, 0]).sum())
         logging.info("  %s: %d frames, %d without a person", vid, len(arrays["bbox"]), missing)
         tmp = target.with_name(target.stem + ".tmp.npz")

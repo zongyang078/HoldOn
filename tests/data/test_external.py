@@ -15,7 +15,7 @@ COCO17 = (
 )
 
 
-def _write(path, t=4, names=COCO17, keypoint_set="coco17", version=1, kpt_shape=None):
+def _write(path, t=4, names=COCO17, keypoint_set="coco17", version=2, kpt_shape=None):
     k = len(names)
     keypoints = np.arange(t * k * 2, dtype=np.float32).reshape(t, k, 2)
     keypoints[2] = np.nan  # frame 2: no person
@@ -29,6 +29,8 @@ def _write(path, t=4, names=COCO17, keypoint_set="coco17", version=1, kpt_shape=
         scores=scores,
         bbox=bbox,
         num_persons=np.array([1, 2, 0, 1], dtype=np.int16)[:t],
+        all_boxes=np.full((t, 8, 4), np.nan, dtype=np.float32),
+        route_region=np.array([0, 0, 720, 1280], dtype=np.float32),
         fps=np.float32(25),
         width=np.int32(720),
         height=np.int32(1280),
@@ -52,6 +54,7 @@ def test_load_pose2d_roundtrip(tmp_path):
     assert xy[0].tolist() == [18.0, 19.0]  # column 9 of frame 0
     assert np.isnan(xy[2]).all() and score[2] == 0
     assert pose.num_persons.tolist() == [1, 2, 0, 1]
+    assert pose.all_boxes.shape == (4, 8, 4) and pose.route_region.tolist() == [0, 0, 720, 1280]
 
 
 def test_unknown_keypoint_name(tmp_path):
@@ -63,7 +66,7 @@ def test_unknown_keypoint_name(tmp_path):
 @pytest.mark.parametrize(
     "kwargs, message",
     [
-        ({"version": 2}, "format_version"),
+        ({"version": 1}, "format_version"),
         ({"keypoint_set": "halpe26"}, "unknown keypoint_set"),
         ({"names": COCO17[:16]}, "keypoint names"),
         ({"kpt_shape": (4, 17, 3)}, "keypoints has shape"),

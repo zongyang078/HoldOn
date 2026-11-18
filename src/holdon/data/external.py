@@ -11,7 +11,7 @@ from pathlib import Path
 
 import numpy as np
 
-POSE2D_FORMAT_VERSION = 1
+POSE2D_FORMAT_VERSION = 2
 KEYPOINT_SETS: dict[str, int] = {"coco17": 17, "coco_wholebody133": 133}
 
 
@@ -31,6 +31,8 @@ class Pose2D:
     scores: np.ndarray  # (T, K) float32, model-specific confidence scale
     bbox: np.ndarray  # (T, 4) float32, climber box x1, y1, x2, y2
     num_persons: np.ndarray  # (T,) int, person boxes detected in the frame
+    all_boxes: np.ndarray  # (T, M, 4) float32, every detected person box, NaN-padded
+    route_region: np.ndarray  # (4,) float32, region the climber was restricted to (NaN if none)
     fps: float
     width: int
     height: int
@@ -68,6 +70,8 @@ def load_pose2d(path: str | Path) -> Pose2D:
             scores=data["scores"].astype(np.float32),
             bbox=data["bbox"].astype(np.float32),
             num_persons=data["num_persons"].astype(np.int32),
+            all_boxes=data["all_boxes"].astype(np.float32),
+            route_region=data["route_region"].astype(np.float32),
             fps=float(data["fps"]),
             width=int(data["width"]),
             height=int(data["height"]),
@@ -87,6 +91,8 @@ def _validate(pose: Pose2D, path: str | Path) -> None:
         "scores": (pose.scores.shape, (t, expected)),
         "bbox": (pose.bbox.shape, (t, 4)),
         "num_persons": (pose.num_persons.shape, (t,)),
+        "all_boxes": (pose.all_boxes.shape[::2], (t, 4)),
+        "route_region": (pose.route_region.shape, (4,)),
     }
     if k != expected:
         raise ValueError(f"{path}: {k} keypoint names for {pose.keypoint_set} ({expected} expected)")

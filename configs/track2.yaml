@@ -1,8 +1,9 @@
-# Track 2: learned temporal classifier.
-features:                    # toggle for ablation
-  overlap2d: true
+# Track 2: learned temporal classifier (owner: learning line). Values are starting points;
+# tune on LOPO training folds only.
+features:                    # toggles for the ablation
+  overlap2d: true            # 2D keypoint-to-hold distances (holdon.features.overlap2d)
   stillness: true
-  distance3d: true
+  distance3d: true           # needs paths.yaml versions.distance3d
 model: gru                   # svm | gru | cnn1d
 window_frames: 25
 train:
@@ -10,6 +11,7 @@ train:
   batch_size: 64
   lr: 1.0e-3
   seed: 0
-decoding:
+decoding:                    # per-frame probability -> events (holdon.models.decoding)
   threshold: 0.5
-  min_duration_frames: 5
+  min_duration_s: 0.5        # same rule as Track 1 so the tracks are comparable
+  merge_gap_frames: 2

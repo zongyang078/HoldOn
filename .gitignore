@@ -1,6 +1,3 @@
-# --- Local AI assistant instructions (kept out of the repository) ---
-/CLAUDE.md
-
 # --- Data, weights and bulky outputs (never commit) ---
 /data/
 /checkpoints/

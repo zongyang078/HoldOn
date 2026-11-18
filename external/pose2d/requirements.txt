@@ -1,0 +1,11 @@
+# Separate 2D pose environment (NOT the main holdon environment). Versions tested on 2026-11-18.
+# GPU machine (GCP / Colab): replace onnxruntime with onnxruntime-gpu==1.32.0 and install a CUDA build of torch.
+rtmlib==0.0.16
+onnxruntime==1.32.0
+transformers==5.23.0
+torch==2.15.0
+scipy==1.18.1
+pillow==13.0.0
+numpy==2.5.5
+opencv-python==5.1.0.95
+certifi==2026.10.23

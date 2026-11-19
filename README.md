@@ -96,6 +96,7 @@ them as needed.
 | Track 1, fingertip/toe | `python3 scripts/tune_track1.py --keypoints fingertip_toe` | `results/track1/…_fingertip_toe/` |
 | Track 1, ViTPose (paper) | `python3 scripts/tune_track1.py --pose-version vitpose-plus-huge_2026-11-18` | `results/track1/vitpose-plus-huge_2026-11-18_wrist_ankle/` |
 | Track 1 figures | `python3 scripts/make_track1_figures.py` (after the fingertip/toe run) | `results/figures/track1_*` |
+| Track 1 demo video | `python3 scripts/make_overlay.py --video p8_orange --scale 0.75` (after the fingertip/toe run) | `results/videos/track1_*.mp4` |
 | Track 2, Track 3 | _to be added by their lines_ | |
 
 ## Known issues

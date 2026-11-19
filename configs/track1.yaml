@@ -24,11 +24,11 @@ merge_gap_frames: 2    # merge contact runs separated by at most this many frame
 # of each fold; the best one is applied to the held-out participant.
 tuning:
   objective: mean_f1            # mean F1 over the tIoU thresholds in configs/eval.yaml, or f1@0.5
-  grid:
-    distance_px: [0, 10, 20]
-    min_duration_s: [0.3, 0.5, 0.8]
-    merge_gap_frames: [0, 5]
-    smoothing.window: [1, 5, 9]
+  grid:                         # widened until the chosen values lay inside the grid
+    distance_px: [10, 20, 30, 45, 60]
+    min_duration_s: [1.6, 2.0, 2.5]
+    merge_gap_frames: [15, 25, 40, 60]
+    smoothing.window: [5, 9]
   min_score_grid:               # keyed by pose model prefix like min_score
-    rtmw: [1.0, 1.5, 2.0, 2.5]
-    vitpose: [0.2, 0.3, 0.5]
+    rtmw: [0.25, 0.5, 1.0, 1.5]
+    vitpose: [0.05, 0.1, 0.2, 0.3]

@@ -3,7 +3,7 @@
 CS 5330 Pattern Recognition and Computer Vision (Northeastern, Prof. Akram Bayat), Fall 2026.
 Team: Zongyang Li (lead), Yen-Wei Lin, Jinghong Yang.
 
-This file is the single source of project context for anyone (human or AI) working in this repository.
+This file is the single source of project context for anyone working in this repository.
 
 ---
 
@@ -145,7 +145,7 @@ Branches: one long-lived branch per line (`feature/3d-line`, `feature/2d-line`, 
 
 **Status 2026-11-18 (Phase 2):**
 
-- B: done — data loader and docs; 2D pose export pipeline (RTMW and ViTPose++, climber restricted to the route region; full run of format v2 in progress, then uploaded to the Drive); Track 1 code with LOPO tuning and reference scoring. First Track 1 results (RTMW, LOPO-tuned, macro F1 at tIoU >0 / ≥0.3 / ≥0.5): wrist/ankle 0.637 / 0.552 / 0.417, fingertip/toe 0.760 / 0.692 / 0.576 (`results/tables/`). Feet gain most from toe keypoints (F1@>0 0.51 → 0.84); hands keep recall ~0.93 at precision ~0.6, i.e. false contacts are the main error, as expected. Open — ViTPose run for the paper comparison, screenshots, Kilter labeling script (may move to Phase 3).
+- B: done — data loader and docs; 2D pose export pipeline (RTMW and ViTPose++, climber restricted to the route region; both runs of format v2 validated); Track 1 code with LOPO tuning and reference scoring. Track 1 results (RTMW, LOPO-tuned, fingertip/toe): macro F1 0.864 / 0.844 / 0.790 at tIoU >0 / ≥0.3 / ≥0.5; details, figures and the report plan in [phase2_results.md](phase2_results.md). ViTPose comparison and figures done. Open — Kilter labeling script (moved to Phase 3, clips not recorded yet).
 - C: evaluation starts from the reference scoring in `holdon/models/track1_tuning.py` (interfaces §5); Track 2 v1 can use the pose files now.
 - A: WHAM + distance files to the format in interfaces §6.
 

@@ -95,6 +95,7 @@ them as needed.
 | Track 1, RTMW wrist/ankle | `python3 scripts/tune_track1.py` | `results/track1/rtmw-x-384_2026-11-18_wrist_ankle/metrics.md` |
 | Track 1, fingertip/toe | `python3 scripts/tune_track1.py --keypoints fingertip_toe` | `results/track1/…_fingertip_toe/` |
 | Track 1, ViTPose (paper) | `python3 scripts/tune_track1.py --pose-version vitpose-plus-huge_2026-11-18` | `results/track1/vitpose-plus-huge_2026-11-18_wrist_ankle/` |
+| Track 1 figures | `python3 scripts/make_track1_figures.py` (after the fingertip/toe run) | `results/figures/track1_*` |
 | Track 2, Track 3 | _to be added by their lines_ | |
 
 ## Known issues
@@ -150,6 +151,14 @@ them as needed.
 | Zongyang Li | 2D line | Data (The Way Up loading, Drive distribution), Track 1 baseline and fingertip variant, Kilter recording, labels and hold detection |
 | Yen-Wei Lin | Learning line | Evaluation module, Track 2 classifier, ablation, grouped analysis, failure gallery |
 | Jinghong Yang | 3D line | Track 3 (WHAM, wall homography, 3D distances), system integration, demo video |
+
+### Phase 2 (implementation and initial testing)
+
+- **Zongyang Li:** data and Drive distribution; 2D pose export (RTMW, ViTPose++) with climber selection, GCP runs and validation; Track 1 baseline and fingertip/toe variant with LOPO tuning; reference scoring; interfaces and documentation; figures.
+- **Yen-Wei Lin:** evaluation module; Track 2 v1 (2D overlap + stillness).
+- **Jinghong Yang:** WHAM inference; wall pose from the homography; per-frame 3D distances.
+
+Results and report material: [docs/phase2_results.md](docs/phase2_results.md).
 
 ### Phase 1 (proposal)
 

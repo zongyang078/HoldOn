@@ -1,14 +1,8 @@
-"""Leave-one-participant-out threshold tuning and scoring for Track 1.
+"""Leave-one-participant-out threshold tuning for Track 1.
 
-TEMPORARY scoring: ``match_events`` / ``video_counts`` / ``macro_metrics`` are a minimal
-implementation of docs/evaluation_protocol.md so Track 1 can be tuned and reported in Phase 2.
-They will be replaced by the shared ``holdon.evaluation`` module (owned by the learning line);
-do not build other tracks on them.
-
-Protocol implemented here: a prediction matches only a ground-truth event with the same limb and
-hold; tIoU on inclusive frame intervals; greedy matching by descending prediction score, each event
-used once; TP / FP / FN per video; Precision, Recall, F1 per video, macro-averaged over videos.
-Threshold 0.0 means tIoU > 0, any other t means tIoU >= t.
+Scoring (matching, P / R / F1, macro average, tuning objective) comes from the shared
+``holdon.evaluation`` module (docs/evaluation_protocol.md); this module only expands the parameter
+grid and picks the best config on the training participants of each fold.
 """
 
 from __future__ import annotations
@@ -16,107 +10,13 @@ from __future__ import annotations
 import copy
 import itertools
 from dataclasses import dataclass
-from typing import Any, Callable, Iterable, Mapping, Sequence
+from typing import Any, Callable, Mapping, Sequence
 
 import numpy as np
 
 from holdon.data.splits import lopo_folds
+from holdon.evaluation.metrics import macro_metrics, objective_value, video_counts
 from holdon.events import ContactEvent
-
-HANDS = ("left_hand", "right_hand")
-FEET = ("left_foot", "right_foot")
-
-
-def tiou(a: ContactEvent, b: ContactEvent) -> float:
-    """Temporal IoU of two inclusive frame intervals."""
-    inter = min(a.end_frame, b.end_frame) - max(a.start_frame, b.start_frame) + 1
-    if inter <= 0:
-        return 0.0
-    union = max(a.end_frame, b.end_frame) - min(a.start_frame, b.start_frame) + 1
-    return inter / union
-
-
-def _passes(value: float, threshold: float) -> bool:
-    return value > 0 if threshold == 0 else value >= threshold
-
-
-def match_events(
-    pred: Sequence[ContactEvent], gt: Sequence[ContactEvent], threshold: float
-) -> list[tuple[int, int, float]]:
-    """Greedy matching; returns ``(pred index, gt index, tIoU)`` for each matched pair."""
-    order = sorted(range(len(pred)), key=lambda i: -pred[i].score)
-    used: set[int] = set()
-    pairs = []
-    for i in order:
-        p = pred[i]
-        best, best_iou = -1, 0.0
-        for j, g in enumerate(gt):
-            if j in used or g.limb != p.limb or g.hold_id != p.hold_id:
-                continue
-            value = tiou(p, g)
-            if value > best_iou:
-                best, best_iou = j, value
-        if best >= 0 and _passes(best_iou, threshold):
-            used.add(best)
-            pairs.append((i, best, best_iou))
-    return pairs
-
-
-@dataclass(frozen=True)
-class Counts:
-    """Matching outcome of one video at one tIoU threshold."""
-
-    tp: int
-    fp: int
-    fn: int
-    tiou_sum: float
-
-    def prf(self) -> tuple[float, float, float]:
-        """Precision, recall, F1 (0 when undefined)."""
-        p = self.tp / (self.tp + self.fp) if self.tp + self.fp else 0.0
-        r = self.tp / (self.tp + self.fn) if self.tp + self.fn else 0.0
-        f = 2 * p * r / (p + r) if p + r else 0.0
-        return p, r, f
-
-
-def video_counts(
-    pred: Sequence[ContactEvent], gt: Sequence[ContactEvent], thresholds: Iterable[float],
-    limbs: Sequence[str] | None = None,
-) -> dict[float, Counts]:
-    """Counts per tIoU threshold for one video, optionally restricted to some limbs."""
-    if limbs is not None:
-        pred = [e for e in pred if e.limb in limbs]
-        gt = [e for e in gt if e.limb in limbs]
-    out = {}
-    for t in thresholds:
-        pairs = match_events(pred, gt, t)
-        out[t] = Counts(len(pairs), len(pred) - len(pairs), len(gt) - len(pairs), sum(v for *_, v in pairs))
-    return out
-
-
-def macro_metrics(per_video: Iterable[Mapping[float, Counts]]) -> dict[float, dict[str, float]]:
-    """Macro average over videos: mean P, R, F1 per threshold, plus mean tIoU over all matches."""
-    per_video = list(per_video)
-    out = {}
-    for t in per_video[0]:
-        prfs = np.array([v[t].prf() for v in per_video])
-        tp = sum(v[t].tp for v in per_video)
-        out[t] = {
-            "precision": float(prfs[:, 0].mean()),
-            "recall": float(prfs[:, 1].mean()),
-            "f1": float(prfs[:, 2].mean()),
-            "mean_tiou": sum(v[t].tiou_sum for v in per_video) / tp if tp else 0.0,
-        }
-    return out
-
-
-def objective_value(metrics: Mapping[float, Mapping[str, float]], objective: str) -> float:
-    """``mean_f1`` (mean F1 over all thresholds) or ``f1@<t>`` (F1 at one threshold)."""
-    if objective == "mean_f1":
-        return float(np.mean([m["f1"] for m in metrics.values()]))
-    if objective.startswith("f1@"):
-        return metrics[float(objective[3:])]["f1"]
-    raise ValueError(f"Unknown objective {objective!r}")
 
 
 def expand_grid(base: Mapping[str, Any], grid: Mapping[str, Sequence[Any]]) -> list[dict[str, Any]]:

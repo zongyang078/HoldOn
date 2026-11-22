@@ -34,11 +34,16 @@ Use a copy of the official WHAM demo notebook (it installs WHAM and downloads SM
 enter your own SMPL account there, never in code). Pick a **T4 GPU** runtime, run its install and
 download cells, then add these cells at the end and run them in order.
 
+The official notebook installs conda with `condacolab` and puts WHAM in a conda env named `wham`.
+After that, `python3` is conda's *base* environment, which has neither torch nor the packages of our
+repository. Hence cell 2 installs our package's dependencies into base (for the dataset installer), and
+cells 3 and 4 run `run_wham.py` with `source activate wham && python`.
+
 ```python
 # 1. Parameters and Drive
 BRANCH = "feature/3d-line"                                # use "main" after the PR is merged
 DATE = "2026-11-22"                                       # version date; keep it fixed to resume
-DRIVE_HOLDON = "/content/drive/MyDrive/CS5330/HoldOn"      # team folder (add a shortcut to My Drive if shared)
+DRIVE_HOLDON = "/content/drive/MyDrive/CS5330/HoldOn"      # your path to the team folder (shortcut to My Drive if shared)
 POSE_DIR = f"{DRIVE_HOLDON}/data/interim/pose2d/vitpose-plus-huge_2026-11-18"
 from google.colab import drive
 drive.mount("/content/drive")
@@ -52,6 +57,7 @@ assert os.path.isdir(POSE_DIR), POSE_DIR
 !rm -rf HoldOn && git clone -q --branch {BRANCH} https://github.com/zongyang078/HoldOn.git
 %cd /content/HoldOn
 !git log -1 --oneline
+!pip3 install -q pyyaml numpy opencv-python pandas matplotlib scikit-learn   # conda base lacks them
 !pip3 install -q --no-deps -e .
 if not os.path.exists("data/raw/wayup/p1/green.mp4"):
     !cp "{DRIVE_HOLDON}/data/raw/wayup.zip" /content/wayup.zip
@@ -60,18 +66,20 @@ if not os.path.exists("data/raw/wayup/p1/green.mp4"):
 
 ```python
 # 3. Test on one short video, local output (about 2-3 min on a T4)
-!python3 external/wham/run_wham.py --wham-root /content/WHAM --pose-dir "{POSE_DIR}" \
+!source activate wham && python external/wham/run_wham.py --wham-root /content/WHAM --pose-dir "{POSE_DIR}" \
     --out /content/wham_test --only p3_orange --overwrite
 ```
 
 The printed line must show a high `covered` share (frames with a body) and a small reprojection error
 (median distance in pixels between the projected SMPL joints and the ViTPose keypoints; a few pixels is
-good, tens of pixels means the body or the camera model is off).
+good, tens of pixels means the body or the camera model is off). First result: `p3_orange` 96% covered
+(WHAM's own tracker: at most 26%).
 
 ```python
 # 4. All 22 videos, written to Drive (resumes: finished videos are skipped)
 OUT = f"{DRIVE_HOLDON}/data/interim/wham"
-!python3 external/wham/run_wham.py --wham-root /content/WHAM --pose-dir "{POSE_DIR}" --out "{OUT}" --date {DATE}
+!source activate wham && python external/wham/run_wham.py --wham-root /content/WHAM --pose-dir "{POSE_DIR}" \
+    --out "{OUT}" --date {DATE}
 ```
 
 Then open `MANIFEST.md` in the version folder on Drive and fill in *Created by*, *Environment* and *Notes*.

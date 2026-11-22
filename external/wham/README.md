@@ -24,6 +24,13 @@ the same keypoint layout and 0–1 score scale as WHAM's ViTPose. The rest is WH
 `demo.py`: boxes from the visible keypoints (×1.2, median-smoothed), HMR2 image features, the WHAM
 network with flip averaging, SMPL. Static camera: no SLAM (`--estimate_local_only` equivalent), no SMPLify.
 
+**Focal length.** WHAM assumes `sqrt(w² + h²)` = 1468.6 px. The bolt holes of all 22 videos fit one
+camera with **590 px** instead (bolt-hole error median 0.9 px vs about 10 px with WHAM's value;
+[results/tables/track3_wall_pose.md](../../results/tables/track3_wall_pose.md)). `run_wham.py` therefore
+replaces WHAM's intrinsics with `focal_length_px` from `configs/track3.yaml`, the same value the wall pose
+uses, so body and wall share one camera. `scripts/make_distance3d.py` refuses WHAM files made with
+another focal length.
+
 Segments: frames with ≥ 6 keypoints above 0.3 (WHAM's thresholds); gaps of up to `--max-gap` frames
 (default 12, about 0.5 s) are bridged with interpolated boxes and masked keypoints; a longer gap starts a
 new segment, and segments shorter than 30 frames are dropped (as in WHAM).
@@ -88,14 +95,14 @@ Then open `MANIFEST.md` in the version folder on Drive and fill in *Created by*,
 
 Row `t` is frame `t` of the processed video (T = its frame count). Frames without a body are NaN
 (`valid` false). 3D points are in the **camera frame in metres** (x right, y down, z forward, OpenCV
-convention), with WHAM's default intrinsics.
+convention), with the intrinsics `focal_length` and `principal_point`.
 
 | Key | dtype, shape | Content |
 | --- | --- | --- |
 | `video_id` | str | e.g. `p3_orange` |
 | `format_version` | int32 | `1` |
 | `num_frames`, `fps`, `width`, `height` | scalars | from the video |
-| `focal_length` | float32 | WHAM default `sqrt(w² + h²)` = 1468.6 px for 720×1280 |
+| `focal_length` | float32 | focal length WHAM ran with (`configs/track3.yaml`, 590 px) |
 | `principal_point` | float32 (2,) | image centre `(w/2, h/2)` |
 | `valid` | bool (T,) | WHAM output exists for the frame |
 | `segment` | int16 (T,) | segment index, `-1` where not valid |
@@ -119,7 +126,17 @@ use the closest of these vertices to a hold.
 The full mesh (6890 vertices) is not stored: about 390 MB per long video. SMPL model files are licensed
 per person (smpl.is.tue.mpg.de): never commit or share them; the stored vertex positions are our output.
 
-## Still to do (3D line)
+## From WHAM files to distance files
 
-The focal length is WHAM's default; the wall pose (`holdon.preprocessing.homography`) estimates its own
-and the two are reconciled when the distances are computed (`holdon.features.distance3d`).
+```bash
+python3 scripts/wall_pose.py      # focal length + wall pose report -> results/tables/track3_wall_pose.md
+python3 scripts/make_distance3d.py --wham-dir data/interim/wham/wham-vitposebox_<date>
+```
+
+In Colab, after cell 4 (base environment, our package):
+
+```python
+# 5. Distance files, written to Drive
+!python3 scripts/make_distance3d.py --wham-dir "{OUT}/wham-vitposebox_{DATE}" \
+    --out "{DRIVE_HOLDON}/data/processed/distance3d" --date {DATE}
+```

@@ -7,6 +7,10 @@ the 2D line's ViTPose++-H pose files (``versions.pose2d_vitpose``: same COCO-17 
 scale as WHAM's ViTPose, climber already restricted to the route region, so no belayer). Everything
 after that is WHAM's own code: HMR2 image features, the WHAM network with flip averaging, SMPL.
 
+Camera: WHAM's default focal length sqrt(w^2 + h^2) (1469 px here) does not fit The Way Up camera.
+The focal length fitted to the bolt holes (``focal_length_px`` in configs/track3.yaml, 590 px) is used
+instead, so the body and the wall pose share one camera (holdon.preprocessing.homography).
+
 Runs inside a WHAM checkout (Colab GPU), never in the main ``holdon`` environment. One ``.npz`` per
 video, keys in external/wham/README.md. Example::
 
@@ -204,7 +208,8 @@ class Wham:
         self.j_regressor_coco = s.J_regressor_wham.cpu().numpy()[:17]  # WHAM's COCO-17 regressor
         self.limb_ids = limb_vertex_ids(s.v_template.cpu().numpy(), self.j_regressor, s.lbs_weights.cpu().numpy())
 
-    def run_video(self, video: Path, tracking: dict, width: int, height: int, fps: float, length: int) -> dict:
+    def run_video(self, video: Path, tracking: dict, width: int, height: int, fps: float, length: int,
+                  focal: float) -> dict:
         """WHAM on prepared segments; returns ``{segment: {frame_ids, pose, trans, betas, verts}}``.
 
         The body of the subject loop follows WHAM's demo.py (flip averaging, no SMPLify, local only).
@@ -221,6 +226,11 @@ class Wham:
         slam = np.zeros((length, 7))
         slam[:, 3] = 1.0  # static camera: identity rotation every frame
         dataset = CustomDataset(self.cfg, tracking, slam, width, height, fps)
+        # Replace WHAM's default intrinsics (focal sqrt(w^2 + h^2)) with ours; the dataset passes them to
+        # the keypoint normaliser and, as ``cam_intrinsics``, to the network's full-image camera.
+        K = dataset.intrinsics.clone()
+        K[..., 0, 0] = K[..., 1, 1] = focal
+        dataset.intrinsics = K
         results = defaultdict(dict)
         for subj in range(len(dataset)):
             with torch.no_grad():
@@ -272,7 +282,7 @@ def build_tracking(kp: np.ndarray, scores: np.ndarray, segments: list[tuple[int,
 
 
 def process_video(wham: Wham, video: Path, pose_file: Path, out_file: Path, max_gap: int,
-                  max_frames: int | None) -> str:
+                  max_frames: int | None, focal: float | None) -> str:
     """Run one video end to end and write ``out_file``; returns a one-line summary."""
     import cv2
 
@@ -298,10 +308,10 @@ def process_video(wham: Wham, video: Path, pose_file: Path, out_file: Path, max_
     if not segments:
         raise RuntimeError(f"{video}: no segment of >= {MINIMUM_FRAMES} frames with a visible climber")
 
+    focal = float(np.hypot(width, height)) if focal is None else float(focal)  # None: WHAM default
     t0 = time.time()
-    res = wham.run_video(video, build_tracking(kp, scores, segments, fps), width, height, fps, length)
+    res = wham.run_video(video, build_tracking(kp, scores, segments, fps), width, height, fps, length, focal)
 
-    focal = float(np.hypot(width, height))  # WHAM's default intrinsics (compute_cam_intrinsics)
     center = (width / 2.0, height / 2.0)
     seg_id = np.full(num_frames, -1, dtype=np.int16)
     parts = {k: [] for k in ("frame_ids", "pose", "trans", "betas", "joints", "coco17", "limb_verts")}
@@ -346,6 +356,17 @@ def process_video(wham: Wham, video: Path, pose_file: Path, out_file: Path, max_
             f"{time.time() - t0:5.0f} s")
 
 
+def config_focal() -> float:
+    """``focal_length_px`` from the repository's configs/track3.yaml (shared with the wall pose)."""
+    import yaml
+
+    cfg_path = Path(__file__).resolve().parents[2] / "configs" / "track3.yaml"
+    focal = yaml.safe_load(cfg_path.read_text()).get("focal_length_px")
+    if focal is None:
+        sys.exit(f"focal_length_px is not set in {cfg_path}; pass --focal")
+    return float(focal)
+
+
 def git_commit() -> str:
     """Commit of this repository (for MANIFEST.md); ``unknown`` outside a git checkout."""
     try:
@@ -372,7 +393,7 @@ def write_manifest(out_dir: Path, args: argparse.Namespace, wham: Wham, lines: l
 | Code commit | {git_commit()} |
 | Producer | external/wham/run_wham.py |
 | Model / weights | WHAM (github.com/yohanshin/WHAM), `{wham.checkpoint}`, HMR2 features, SMPL neutral |
-| Config | WHAM `configs/yamls/demo.yaml`, flip eval {not args.no_flip}, local only (static camera), no SMPLify, max gap {args.max_gap} frames |
+| Config | WHAM `configs/yamls/demo.yaml`, flip eval {not args.no_flip}, local only (static camera), no SMPLify, max gap {args.max_gap} frames, focal {args.focal} px |
 | Input | processed videos `data/raw/wayup/<rec>/<route>.mp4`; keypoints and climber from `{Path(args.pose_dir).name}` |
 | Environment | <fill in: Colab GPU type, torch version> |
 
@@ -380,7 +401,7 @@ def write_manifest(out_dir: Path, args: argparse.Namespace, wham: Wham, lines: l
 
 `<video_id>.npz`: per-frame SMPL body in the camera frame (metres), NaN where WHAM has no output.
 Keys and conventions: external/wham/README.md. Limb vertices (count): {counts}.
-Intrinsics: WHAM default, focal = sqrt(w^2 + h^2) px, principal point at the image centre.
+Intrinsics: focal {args.focal} px (configs/track3.yaml, fitted to the bolt holes), principal point at the image centre.
 
 ## Notes
 
@@ -407,7 +428,11 @@ def main() -> None:
     ap.add_argument("--max-frames", type=int, help="smoke test: use only the first N frames")
     ap.add_argument("--no-flip", action="store_true", help="disable flip averaging (about 2x faster)")
     ap.add_argument("--overwrite", action="store_true", help="redo videos that already have a file")
+    ap.add_argument("--focal", type=float, help="focal length in px (default: focal_length_px in configs/track3.yaml)")
     args = ap.parse_args()
+    if args.focal is None:
+        args.focal = config_focal()
+    print(f"focal length: {args.focal} px")
 
     # Resolve user paths before WHAM changes the working directory.
     wayup, pose_dir = args.wayup.resolve(), args.pose_dir.resolve()
@@ -429,7 +454,7 @@ def main() -> None:
             continue
         rec, route = vid.rsplit("_", 1)
         line = process_video(wham, wayup / rec / f"{route}.mp4", pose_dir / f"{vid}.npz", out_file,
-                             args.max_gap, args.max_frames)
+                             args.max_gap, args.max_frames, args.focal)
         print(line, flush=True)
         lines.append(line)
     if lines and args.max_frames is None:

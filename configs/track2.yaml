@@ -1,17 +1,54 @@
-# Track 2: learned temporal classifier (owner: learning line). Values are starting points;
-# tune on LOPO training folds only.
-features:                    # toggles for the ablation
-  overlap2d: true            # 2D keypoint-to-hold distances (holdon.features.overlap2d)
-  stillness: true
-  distance3d: true           # needs paths.yaml versions.distance3d
-model: gru                   # svm | gru | cnn1d
-window_frames: 25
-train:
+# Track 2: learned per-frame contact classifier (owner: learning line). Tune on LOPO training folds only.
+# v1 = 2D overlap + stillness features -> SVM; distance3d features come once versions.distance3d exists.
+
+pose_version: null           # null = paths.yaml versions.pose2d
+run_name: v1                 # results/track2/<pose_version>_<run_name>/
+seed: 0
+
+features:                    # toggles for the ablation (holdon.features.build)
+  overlap2d: true            # keypoint-to-box distances, inside flags, rank, holds nearby, confidences
+  stillness: true            # keypoint speed (box heights per frame)
+  context: true              # rolling mean / min of the enabled distances and speeds over context_frames
+  distance3d: false          # needs paths.yaml versions.distance3d (Track 3); not implemented in v1
+
+keypoints:                   # holdon.models.rules.LIMB_KEYPOINTS sets
+  tips: fingertip_toe        # 5 fingertips per hand; big toe, small toe, heel per foot
+  joint: wrist_ankle
+
+min_score:                   # keypoint confidence below which a frame counts as missing (per pose model)
+  rtmw: 1.5
+  vitpose: 0.3
+smoothing:                   # holdon.preprocessing.smoothing.smooth_track
+  method: median
+  window: 5
+  max_gap: 5
+
+candidates:                  # rows of the feature table: per frame and limb only these holds
+  radius_px: 80              # hold box within this distance of the fingertip/toe or wrist/ankle
+  max_per_limb: 3            # and among the 3 nearest holds of the frame
+context_frames: [2, 6, 12]   # half-widths of the rolling windows (±2 / ±6 / ±12 frames)
+
+model: svm                   # svm (v1) | gru | cnn1d (Phase 3)
+svm:                         # holdon.models.svm
+  nystroem_components: 300
+  gamma: null                # null = 1 / n_features (scikit-learn default on standardized features)
+  C: 1.0
+  max_iter: 5000
+  max_train_rows: 60000      # stratified subsample when a training set is larger
+
+inner_folds: 3               # participant groups inside the training participants (out-of-fold scores)
+decoding:                    # defaults; holdon.models.decoding (best hold per limb and frame, then events)
+  threshold: 0.0             # SVM decision value
+  min_duration_s: 0.5
+  merge_gap_frames: 2
+tuning:                      # chosen per outer fold on the out-of-fold scores of its training participants
+  objective: mean_f1
+  grid:
+    threshold: [-0.5, -0.25, 0.0, 0.25, 0.5, 0.75]
+    min_duration_s: [0.5, 1.0, 1.6, 2.0, 2.5]
+    merge_gap_frames: [2, 10, 25, 40, 60, 80, 120, 200]   # widened twice: 40, then 80 (old edges) chosen in 10 of 10 folds
+
+train:                       # GRU / 1D-CNN (Phase 3)
   epochs: 30
   batch_size: 64
   lr: 1.0e-3
-  seed: 0
-decoding:                    # per-frame probability -> events (holdon.models.decoding)
-  threshold: 0.5
-  min_duration_s: 0.5        # same rule as Track 1 so the tracks are comparable
-  merge_gap_frames: 2

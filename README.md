@@ -47,9 +47,9 @@ Download files to your disk; do not point `data/` at a synced Drive folder (slow
 | Yen-Wei Lin, `feature/learning-line` | evaluation, Track 2, ablation, grouped analysis, failure gallery | pose files, distance files, events | `holdon.evaluation` + `scripts/evaluate.py` (§5), Track 2 events (§4) |
 | Jinghong Yang, `feature/3d-line` | Track 3 (WHAM, wall pose, 3D distances), integration, demo | videos, `rec.wall` homography | distance files (§6), Track 3 events (§4) |
 
-- **Learning line, first step:** move the reference scoring in `src/holdon/models/track1_tuning.py` into
-  `holdon.evaluation` unchanged (interfaces §5), then build Track 2 features on the pose files.
-  Until distance files exist, run Track 2 with `distance3d: false` in `configs/track2.yaml`.
+- **Learning line:** scoring lives in `holdon.evaluation` (`scripts/evaluate.py` scores any `events.csv`,
+  interfaces §5); Track 2 v1 (2D overlap + stillness → SVM) runs with `distance3d: false` in
+  `configs/track2.yaml` until distance files exist.
 - **3D line, first step:** run WHAM on one video, then produce one distance file and check it with
   `holdon.data.external.load_distance3d` (interfaces §6). Write the WHAM setup into `external/wham/README.md`.
 
@@ -59,9 +59,11 @@ Download files to your disk; do not point `data/` at a synced Drive folder (slow
 | --- | --- | --- |
 | `src/holdon/data/` | The Way Up loader, video I/O, pose / distance file readers, LOPO splits | done |
 | `src/holdon/preprocessing/` | keypoint smoothing (done); homography / wall pose, label conversion | partly |
-| `src/holdon/features/` | 2D keypoint-to-hold distances (done); stillness, 3D distance, feature tables | partly |
-| `src/holdon/models/` | contact rules + event decoding (done, shared by all tracks), Track 1 tuning; SVM, GRU, hold detection | partly |
-| `src/holdon/training/`, `evaluation/`, `visualization/` | Track 2 training, evaluation, timelines / overlays | to do |
+| `src/holdon/features/` | 2D keypoint-to-hold distances, candidate holds, keypoint stillness, Track 2 feature tables (done); 3D distance features | partly |
+| `src/holdon/models/` | contact rules + event decoding (done, shared by all tracks), Track 1 tuning, Track 2 SVM (done); GRU / 1D-CNN, hold detection | partly |
+| `src/holdon/evaluation/` | event matching, P / R / F1, breakdowns (hands/feet, route, occlusion, experience), report tables (done); ablation | partly |
+| `src/holdon/training/` | Track 2 LOPO training with inner-fold decoding tuning (done); windows for GRU | partly |
+| `src/holdon/visualization/` | timelines / overlays (used by the Track 1 figures) | done |
 | `src/holdon/events.py` | shared contact-event format | done |
 | `scripts/` | thin command-line entry points (logic stays in `src/holdon/`) | — |
 | `external/pose2d/` | 2D pose export, separate environment ([README](external/pose2d/README.md)) | done |
@@ -96,7 +98,9 @@ them as needed.
 | Track 1, fingertip/toe | `python3 scripts/tune_track1.py --keypoints fingertip_toe` | `results/track1/…_fingertip_toe/` |
 | Track 1, ViTPose (paper) | `python3 scripts/tune_track1.py --pose-version vitpose-plus-huge_2026-11-18` | `results/track1/vitpose-plus-huge_2026-11-18_wrist_ankle/` |
 | Track 1 figures | `python3 scripts/make_track1_figures.py` (after the fingertip/toe run) | `results/figures/track1_*` |
-| Track 2, Track 3 | _to be added by their lines_ | |
+| Score any run (all / hands / feet, route, occlusion, experience) | `python3 scripts/evaluate.py results/<track>/<run>/events_lopo.csv` | `metrics.md` next to the events file (`--out` to rename) |
+| Track 2 v1, SVM on 2D overlap + stillness (CPU, ~3 min) | `python3 scripts/run_track2.py` | `results/track2/rtmw-x-384_2026-11-18_v1/metrics.md` |
+| Track 3 | _to be added by the 3D line_ | |
 
 ## Known issues
 
@@ -155,7 +159,7 @@ them as needed.
 ### Phase 2 (implementation and initial testing)
 
 - **Zongyang Li:** data and Drive distribution; 2D pose export (RTMW, ViTPose++) with climber selection, GCP runs and validation; Track 1 baseline and fingertip/toe variant with LOPO tuning; reference scoring; interfaces and documentation; figures.
-- **Yen-Wei Lin:** evaluation module; Track 2 v1 (2D overlap + stillness).
+- **Yen-Wei Lin:** evaluation module (scoring moved from Track 1 with identical numbers, `evaluate()`, hands/feet, route, occlusion and experience breakdowns, `scripts/evaluate.py`); Track 2 v1 (candidate limb–hold pairs, 2D overlap + stillness + temporal-context features, Nystroem SVM, LOPO with inner-fold tuning, `scripts/run_track2.py`); Track 2 results and report material.
 - **Jinghong Yang:** WHAM inference; wall pose from the homography; per-frame 3D distances.
 
 Results and report material: [docs/phase2_results.md](docs/phase2_results.md).

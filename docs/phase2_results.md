@@ -4,10 +4,16 @@ Source material for the Phase 2 progress report and the 20-minute presentation (
 Whoever writes the report or slides: take numbers, captions and claims **from this file
 only**; each one names the file it comes from. Sections marked _pending_ are filled in by their owner.
 
-Course requirements for the report and presentation: overview of the implemented solution; system
-architecture and implementation approach; technologies, tools and libraries; initial testing results with
-screenshots or demonstrations; challenges and planned improvements; contributions of each member.
-No length or structure is prescribed; the presentation slot is 20 minutes per group.
+Two separate submissions use this file:
+
+- **Phase 2 assignment** (Implementation and Initial Testing): prototype, source code and a progress
+  report covering overview, architecture, tools and libraries, initial results with screenshots,
+  challenges and planned improvements, and each member's contribution. Report plan: §11.
+- **Presentation, Phase 1 & 2** (300 points, slides uploaded by **Mon Nov 23, 2026, 8:59 pm**):
+  20 minutes for our 3-member team, **every member presents**. Graded parts: Problem & Motivation (50),
+  Existing Work & Proposed Solution (50), Implementation & Demonstration (100), Initial Testing &
+  Results (50), Challenges & Team Contributions (50). Focus on what is implemented; demonstration and
+  results come before background, and related work stays short. Slide plan: §12.
 
 ## 1. Data and versions
 
@@ -101,6 +107,16 @@ side by side as context only, never as a like-for-like comparison (`docs/evaluat
 | `track1_false_positive.jpg` | Typical false positive: p2a_green at 21.6 s, the right hand's fingertips lie inside hold 11's box for 4.2 s while the hand is not on the hold (no labeled contact). 2D overlap cannot tell whether the hand is on the hold or in front of it, which motivates the temporal (Track 2) and 3D (Track 3) cues. |
 | `pose_selection_fix.jpg` | Climber selection before and after the fix: without the route-region filter the tracker jumped to the belayer (left, red box) when the climber was missed for a frame high on the wall; with it the climber stays tracked (right, green box). |
 
+Demo videos (`results/videos/`, made by `scripts/make_overlay.py`; not in git, copy them to the Drive
+folder `deliverables/phase2_progress/` for the slides). Each frame: hold boxes, labeled contact holds
+(orange), Track 1 contact holds (magenta), fingertip/toe keypoints (red), and a band with labeled vs
+predicted hold per limb (green row = agree, red row = disagree). Held-out (LOPO) predictions only.
+
+| File | Content | Command |
+| --- | --- | --- |
+| `track1_p8_orange_0-39s.mp4` | Whole climb of p8_orange (39 s, H.264, 540×1100) | `python3 scripts/make_overlay.py --video p8_orange --scale 0.75` |
+| `track1_p2a_green_17-27s.mp4` | The false positive of `track1_false_positive.jpg` in motion (right hand passes hold 11) | `python3 scripts/make_overlay.py --video p2a_green --start 17 --end 27 --scale 0.75` |
+
 ## 6. Challenges (2D line)
 
 | Challenge | What happened | Resolution / status |
@@ -127,6 +143,20 @@ rtmlib 0.0.16 + ONNX Runtime GPU 1.32 (YOLOX-m detector, RTMW-x), HuggingFace tr
 2.15 (ViTPose++-H); Google Cloud (n1-standard-4, NVIDIA T4) and a Colab notebook for pose inference;
 pytest (82 unit tests, CPU only); GitHub (one branch per line, pull requests); Google Drive (data, versioned outputs).
 WHAM + SMPL for Track 3 (3D line).
+
+## 8a. Existing work (from the Phase 1 related-work review)
+
+| Work | What it does | Gap we address |
+| --- | --- | --- |
+| The Way Up (Maschek & Schedl, CVPRW 2025) | Dataset + 2D baseline: pose keypoint inside a hold box; ~86.6% accuracy at tIoU > 0, ~69% at > 0.5 (ViTPose) | 2D only; over-predicts hand contacts |
+| Training-Free (arXiv 2609.30026, 2026) | Fingertip keypoints for hold contact | Still 2D; hand false positives remain; its result tables are inconsistent, so cite the idea, not the numbers |
+| CIMI4D (CVPR 2023), ClimbingCap (CVPR 2025) | Accurate 3D climbing motion | Need LiDAR / extra sensors, not monocular video |
+| DECO (ICCV 2023) | Body–scene contact from a single image | Not hold-specific, no timing |
+| WHAM (CVPR 2024), HMR 2.0 (ICCV 2023) | Monocular 3D human motion; WHAM uses foot contact | Hand contact on walls untested |
+
+Gap: no monocular, temporal, hold-level contact detector that compares 2D and 3D cues on the same
+splits. Real-world uses (Phase 1 slide 2): competition scoring, coaching feedback, training logs; today
+this is done by manual video review or force sensors built into holds, neither of which scales.
 
 ## 9. Learning line (evaluation module, Track 2 v1) and 3D line
 
@@ -245,7 +275,7 @@ challenges, next steps.
 | Yen-Wei Lin | Learning line | Evaluation module (`holdon.evaluation`: scoring moved from Track 1 with identical numbers, `evaluate()` entry point, hands/feet, route, occlusion and experience breakdowns, `scripts/evaluate.py`); Track 2 v1 (candidate limb–hold pairs, 2D overlap + stillness + temporal-context features, Nystroem SVM, LOPO with inner-fold decoding tuning, `scripts/run_track2.py`); Track 2 results and report material (§9.1–9.5); unit tests for all new modules |
 | Jinghong Yang | 3D line | WHAM inference; wall pose from the homography; per-frame 3D distances — _details pending_ |
 
-## 11. Report outline (suggested, 3–5 pages)
+## 11. Report outline (Phase 2 progress report, suggested 3–5 pages)
 
 1. **Overview** — problem, research question (2D methods over-report contacts), three tracks, what Phase 2 delivers.
 2. **System architecture** — data flow (video → pose / WHAM → events → evaluation), interfaces between lines
@@ -256,24 +286,47 @@ challenges, next steps.
 6. **Challenges and planned improvements** (§6, §7, plus the other lines).
 7. **Contributions** (§10).
 
-## 12. Slide outline (suggested, 20 min: about 17 min talk + 3 min questions)
+The slides stay light on purpose; the report carries the detail they leave out. Put these in the report:
+the full P / R / F1 table incl. hands vs feet (§4), the chosen parameters per fold (§3), the full technique
+list with versions (§8), GCP speeds and run time (§2), pose validation incl. the ViTPose numbers (§2), the
+full challenge table (§6), and the paper comparison caveat (§4).
 
-Each track gets the same space (2 slides); shared topics come before and after the tracks.
+Draft: [phase2_report.md](phase2_report.md).
 
-| # | Slide | Min | Content | Material |
-| --- | --- | --- | --- | --- |
-| 1 | Title | 0.5 | project name, team, one-line problem statement | — |
-| 2 | Problem and research question | 1 | which limb touches which hold and when; 2D methods over-report contacts (hand in front of a hold); question: how far do temporal and 3D cues reduce false contacts | §11.1, `track1_false_positive.jpg` |
-| 3 | Approach | 1 | the three tracks in one line each; same data, splits and evaluation for all | §11.1 |
-| 4 | System architecture and tools | 1.5 | data-flow diagram (video → pose / WHAM → events → evaluation); interfaces between modules; main libraries | `docs/interfaces.md` diagram, §8 |
-| 5 | Data and evaluation | 1.5 | The Way Up (22 videos, 939 contacts, occlusion); LOPO splits; event matching by limb + hold, tIoU, P / R / F1 | §1, `docs/evaluation_protocol.md` |
-| 6 | 2D pose pipeline | 1.5 | detector → climber selection → RTMW / ViTPose; GCP run; validation numbers; selection fix | §2, `pose_selection_fix.jpg` |
-| 7 | Track 1: method and results | 1.5 | rule (keypoint near hold, minimum duration), LOPO tuning, results table | §3, §4 |
-| 8 | Track 1: examples and errors | 1 | overlay and timeline; findings (toes for feet, 2 s minimum, hand false positives) | §4 findings, §5 |
-| 9 | Track 2: evaluation module and features | 1.5 | evaluation module status; per-frame features (2D overlap, stillness) | §9.1, §9.2 |
-| 10 | Track 2: first results | 1.5 | classifier v1 and first numbers or examples | §9.3 |
-| 11 | Track 3: WHAM and wall pose | 1.5 | WHAM body on the climbing videos; wall plane from the bolt-hole homography | §9 |
-| 12 | Track 3: 3D distances | 1 | first limb-to-hold distance curves vs labeled contacts | §9 |
-| 13 | Challenges | 1 | one row per line: what went wrong, what was done | §6 + other lines |
-| 14 | Next steps (Phase 3) | 1 | per line: planned improvements; three-track comparison, ablation, Kilter demo | §7 + other lines |
-| 15 | Contributions | 0.5 | one line per member | §10 |
+## 12. Slide outline (20 min, follows the five graded parts)
+
+About 18 min of talk plus 2 min buffer or questions. Minutes follow the points: the demonstration part
+(100 points) gets the most time. Each track has two slides (implementation + output, then results);
+every member presents part of the talk. Upload the slides and both demo videos to the Drive folder
+`deliverables/phase2_progress/`; embed the videos in the slides and keep a still image as fallback.
+
+- **Reuse Phase 1** (`deliverables/phase1_proposal/Team06_HoldOn_Phase1_Slides.pptx` on the Drive): parts
+  1 and 2 cover Phase 1 content, so condense its slides 2–3 (motivation, problem), 8–9 (existing work)
+  and 7 (three tracks), and keep its visual style. Update what changed since Phase 1: pose tools are now
+  rtmlib (YOLOX-m + RTMW-x) and HuggingFace ViTPose++, not MMPose / Ultralytics YOLO; the tuned minimum
+  contact duration is 2.0 s, not 0.5 s; ground truth counted as 939 events.
+- **Demo material per line:** the rubric asks for a working prototype on sample data with actual
+  outputs (images, videos or data). Each line shows its own: Track 1 the two videos above; Track 2 e.g.
+  `scripts/evaluate.py` output and a feature plot on one video; Track 3 e.g. the WHAM render on a
+  climbing video and a distance curve. All on The Way Up videos (Kilter clips come in Phase 3).
+
+| # | Part (points) | Slide | Min | Content | Material |
+| --- | --- | --- | --- | --- | --- |
+| 1 | — | Title | 0.3 | project name, team, one-line problem statement | — |
+| 2 | 1 Problem & Motivation (50) | Hook and real-world example | 1.2 | 8 s raw clip + "which holds does the right hand touch?"; the coach's label rows; uses: competition scoring, coaching feedback, training logs; today manual review or instrumented holds | §8a, p8_orange 12–20 s and its label rows |
+| 3 | 1 | Why it is hard | 1 | hands occluded about half of their contact time; a hand passing in front of a hold looks like a grasp in 2D; research question | `track1_false_positive.jpg`, §6 |
+| 4 | 2 Existing Work & Solution (50) | Existing work | 0.8 | one row per work, the gap (keep short) | §8a |
+| 5 | 2 | Proposed solution and CV techniques | 1.5 | three tracks in one line each, same data / splits / evaluation; techniques and why: YOLOX (climber detection), RTMW (fingertips, toes) and ViTPose (paper baseline) pose, median filtering, homography + RANSAC (wall plane), optical flow (stillness), SVM / temporal model, WHAM (3D body) | §3, §8, `docs/PROJECT_CONTEXT.md` §1 |
+| 6 | 3 Implementation & Demo (100) | System workflow / architecture | 1.3 | data-flow diagram video → pose / WHAM → contact events → one evaluation module; shared event format; versioned data on the Drive | `docs/interfaces.md` diagram |
+| 7 | 3 | Data and 2D pose pipeline | 1.2 | The Way Up (22 videos, 939 contacts); detect → pick the climber → 133 keypoints; one real keypoint frame; 95.7% validation (GCP details in the notes) | §1, §2 |
+| 8 | 3 | Track 1: implementation | 1 | clean → measure → assign → filter; ankle vs toe image (why toes); fair LOPO tuning | §3, §4 finding 1 |
+| 9 | 3 | **Demo: Track 1 on a full climb** | 1.5 | play `track1_p8_orange_0-39s.mp4`; explain the status band (green = agrees with the label) | §5 videos, `track1_overlay_p8_orange.jpg` as fallback |
+| 10 | 3 | Track 2: implementation and output | 1.2 | evaluation module; per-frame features (2D overlap, stillness, context), SVM, LOPO; timeline on a sample video | §9.1, §9.2, `track2_timeline_p8_orange.png` |
+| 11 | 3 | Track 3: implementation and output | 1.2 | WHAM body on a climbing video; wall plane from the homography; a limb-to-hold distance curve | §9 |
+| 12 | 4 Testing & Results (50) | How we test | 0.8 | LOPO by participant; event matching by limb + hold with tIoU 0 / 0.3 / 0.5; P / R / F1 macro over videos; pose validation (95.7% near labeled hold); 82 CPU unit tests | §1, §2, `docs/evaluation_protocol.md` |
+| 13 | 4 | Track 1 results | 1 | results table (fingertip/toe vs wrist/ankle vs ViTPose vs untuned); paper numbers as context only | §4 table, comparison note |
+| 14 | 4 | Track 2 and Track 3 first results | 1 | Track 2 v1 vs Track 1 table (hand false contacts 91 → 38); Track 3 first output | §9.3, §9.6 |
+| 15 | 4 | What works, what needs improvement | 1 | works: feet with toe keypoints (F1 0.908), accurate intervals (mean tIoU 0.836); needs work: hand false positives (play `track1_p2a_green_17-27s.mp4`), missed climber high on the wall, contacts under 2 s | §4 findings, §6 |
+| 16 | 5 Challenges & Contributions (50) | Challenges and limitations | 1 | 2D line as three picture cards (wrong person, GPUs, climber too small); one box per other line | §6, `pose_selection_fix.jpg` + other lines |
+| 17 | 5 | Next steps (Phase 3) | 0.7 | per line; three-track comparison, ablation, Kilter demo | §7 + other lines |
+| 18 | 5 | Team contributions | 0.6 | one line per member | §10 |

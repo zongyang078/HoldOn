@@ -6,7 +6,7 @@ import numpy as np
 
 from holdon.data.wayup import Hold
 from holdon.events import ContactEvent
-from holdon.visualization.overlay import draw_keypoints, highlight_holds
+from holdon.visualization.overlay import contact_panel, draw_keypoints, highlight_holds
 from holdon.visualization.timeline import plot_timeline
 
 
@@ -25,3 +25,10 @@ def test_plot_timeline(tmp_path):
     fig = plot_timeline(gt, pred, fps=25, title="v")
     fig.savefig(tmp_path / "t.png")
     assert (tmp_path / "t.png").stat().st_size > 0
+
+
+def test_contact_panel_colors_rows():
+    band = contact_panel(300, {"left_hand": "3"}, {"left_hand": "3", "right_foot": "7"}, header="v")
+    assert band.shape[1] == 300 and band.shape[0] > 100
+    rows = band[:, :, 1] < 200  # dark pixels
+    assert rows.any()

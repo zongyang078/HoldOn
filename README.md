@@ -98,6 +98,7 @@ them as needed.
 | Track 1, fingertip/toe | `python3 scripts/tune_track1.py --keypoints fingertip_toe` | `results/track1/…_fingertip_toe/` |
 | Track 1, ViTPose (paper) | `python3 scripts/tune_track1.py --pose-version vitpose-plus-huge_2026-11-18` | `results/track1/vitpose-plus-huge_2026-11-18_wrist_ankle/` |
 | Track 1 figures | `python3 scripts/make_track1_figures.py` (after the fingertip/toe run) | `results/figures/track1_*` |
+| Track 1 demo video | `python3 scripts/make_overlay.py --video p8_orange --scale 0.75` (after the fingertip/toe run) | `results/videos/track1_*.mp4` |
 | Score any run (all / hands / feet, route, occlusion, experience) | `python3 scripts/evaluate.py results/<track>/<run>/events_lopo.csv` | `metrics.md` next to the events file (`--out` to rename) |
 | Track 2 v1, SVM on 2D overlap + stillness (CPU, ~3 min) | `python3 scripts/run_track2.py` | `results/track2/rtmw-x-384_2026-11-18_v1/metrics.md` |
 | Track 3 | _to be added by the 3D line_ | |

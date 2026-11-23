@@ -122,6 +122,7 @@ Branches: one long-lived branch per line (`feature/3d-line`, `feature/2d-line`, 
 - Any language compatible with OpenCV.
 - Test on sample data; report preliminary results (metrics or visual outputs), challenges and limitations.
 - Deliverables: prototype, source code and supporting files, progress report + presentation (overview, architecture, tools/libraries, initial results with screenshots, challenges, per-member contributions).
+- Presentation (300 points, slides uploaded by Mon Nov 23, 8:59 pm): 20 min for 3 members, every member presents. Graded: Problem & Motivation (50), Existing Work & Proposed Solution (50), Implementation & Demonstration with actual outputs (100), Initial Testing & Results (50), Challenges & Team Contributions (50). Demonstration and results first; keep related work short. Slide plan: [phase2_results.md](phase2_results.md) §12.
 
 ### Phase 3 — Final Implementation, Evaluation, Submission (due Dec 8, 2026)
 

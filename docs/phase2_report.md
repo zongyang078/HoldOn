@@ -76,6 +76,8 @@ wayup.zip ──┬── external/pose2d ──> pose2d/<version>/ ──┬─
 - **Validation:** in labelled contact frames where the climber is detected, the RTMW wrist or ankle is
   within 40 px of the labelled hold 95.7% of the time.
   - Without the route-region filter this was 89.3%, because the tracker switched to the belayer (Figure 1).
+  - ViTPose++-H on the same boxes: 97.1%. Frame counts match the videos in all 22 files, and the climber
+    is detected in 92.2% of labelled contact frames.
 
 ![Figure 1](../results/figures/pose_selection_fix.jpg)
 *Figure 1. Climber selection before (left, the tracker jumps to the belayer) and after the route-region filter (right).*
@@ -91,9 +93,21 @@ wayup.zip ──┬── external/pose2d ──> pose2d/<version>/ ──┬─
 - **Keypoint sets:** wrist/ankle (as in The Way Up) and fingertip/toe (5 fingertips per hand; big toe,
   small toe and heel per foot).
 - **Tuning:** in each LOPO fold, the best of 480 parameter combinations is chosen on the training
-  participants.
-  - Fingertip/toe chose 20 px, a 2.0 s minimum duration and a 40-frame gap.
-  - The paper's untuned 0.5 s rule is far too short here (see §5).
+  participants (objective: mean F1 over the three tIoU thresholds). Values chosen per setting:
+
+| Pose, keypoints | distance_px | min_duration_s | merge_gap_frames | min_score |
+| --- | --- | --- | --- | --- |
+| RTMW fingertip/toe | 20 (9 of 10 folds) | 2.0 (10 of 10) | 40 (9 of 10) | 1.5 (8 of 10) |
+| RTMW wrist/ankle | 45 (9 of 10) | 2.0 (9 of 10) | 25 (8 of 10) | 0.25 (9 of 10) |
+| ViTPose wrist/ankle | 30 (10 of 10) | 2.0 (10 of 10) | 40 (10 of 10) | 0.05 (10 of 10) |
+
+  RTMW scores range 0–10 and ViTPose scores 0–1, so `min_score` is set per model. The paper's untuned
+  0.5 s rule is far too short here (see §5).
+- **Demo videos** (`scripts/make_overlay.py`, held-out predictions only): `track1_p8_orange_0-39s.mp4`
+  shows a whole climb, and `track1_p2a_green_17-27s.mp4` shows the false positive of Figure 3 in motion.
+  Each frame shows the hold boxes, the labelled contact holds (orange), the Track 1 contact holds
+  (magenta), the fingertip/toe keypoints (red), and a band with the labelled vs predicted hold per limb
+  (green row = agree, red = disagree).
 
 ### 3.4 Evaluation module (learning line)
 
@@ -113,7 +127,7 @@ wayup.zip ──┬── external/pose2d ──> pose2d/<version>/ ──┬─
 
 ### 3.5 Track 2 v1 — learned per-frame classifier (learning line)
 
-- **Candidates:** scoring every limb against every hold in every frame would give about 4.8 M rows. For
+- **Candidates:** scoring every limb against every hold in every frame would give about 4.0 M rows. For
   each frame and limb we keep only holds within 80 px of the fingertip/toe or wrist/ankle keypoints that
   are also among the 3 nearest holds.
   - This gives 394,759 rows and keeps 91.8% of the labelled contact frames.
@@ -140,8 +154,8 @@ the bolt-hole homography; per-frame 3D limb-to-hold distances; what runs and on 
 ## 4. Tools and libraries
 
 - **Code:** Python 3.14; OpenCV 5 (video I/O, drawing); NumPy; matplotlib; PyYAML.
-- **2D pose:** rtmlib 0.0.16 with ONNX Runtime GPU (YOLOX-m detector, RTMW-x); HuggingFace transformers
-  with PyTorch (ViTPose++-H).
+- **2D pose:** rtmlib 0.0.16 with ONNX Runtime GPU 1.32 (YOLOX-m detector, RTMW-x); HuggingFace
+  transformers 5.23 with PyTorch 2.15 (ViTPose++-H); ffmpeg (H.264 demo videos).
 - **Track 2:** scikit-learn (Nystroem, LinearSVC).
 - **3D:** WHAM + SMPL (Track 3).
 - **Compute:** Google Cloud (n1-standard-4, NVIDIA T4), plus a Colab notebook as fallback.
@@ -164,7 +178,11 @@ unless noted.
 | — hands | 0.834 / 0.832 / **0.828** | 0.799 / 0.796 / **0.792** | 0.726 / 0.721 / **0.719** |
 | — feet | 0.959 / 0.868 / **0.908** | 0.956 / 0.865 / **0.905** | 0.923 / 0.835 / **0.874** |
 | Track 1 wrist/ankle, all limbs | 0.757 / 0.755 / **0.752** | 0.737 / 0.734 / **0.731** | 0.654 / 0.649 / **0.648** |
+| — hands | 0.856 / 0.848 / **0.847** | 0.835 / 0.826 / **0.825** | 0.762 / 0.745 / **0.749** |
+| — feet | 0.656 / 0.662 / **0.652** | 0.638 / 0.644 / **0.634** | 0.550 / 0.554 / **0.546** |
 | Track 1 ViTPose++-H wrist/ankle (paper setting) | 0.799 / 0.796 / **0.795** | 0.774 / 0.771 / **0.770** | 0.711 / 0.706 / **0.706** |
+| — hands | 0.881 / 0.870 / **0.872** | 0.864 / 0.853 / **0.856** | 0.809 / 0.797 / **0.800** |
+| — feet | 0.717 / 0.723 / **0.715** | 0.685 / 0.690 / **0.683** | 0.617 / 0.617 / **0.612** |
 | Untuned rule (0.5 s, inside box), fingertip/toe | 0.548 / 0.761 / **0.631** | 0.370 / 0.512 / **0.426** | 0.219 / 0.306 / **0.254** |
 | Track 3 | **[3D line — to be filled in]** | | |
 
@@ -178,21 +196,28 @@ comparable.
    because the ankle lies outside the foothold box when the climber stands on the toes.
 2. **The duration rule matters most for Track 1.** Every fold chose a 2.0 s minimum duration for Track 1. The
    untuned 0.5 s rule reaches only F1 0.631 / 0.426 / 0.254.
-   - The cost of the longer minimum: 137 of 939 contacts (14.6%) last under 2 s and cannot be found.
-3. **Track 2 reduces false hand contacts, the research question.**
+   - The cost of the longer minimum: 137 of 939 contacts (14.6%, 66 of them hands) last under 2 s and
+     cannot be found.
+3. **Hands are the hard part for Track 1, and the pose model matters.**
+   - The best Track 1 hand F1 is 0.872 (ViTPose wrist), below the best feet (0.908, RTMW toes).
+   - For hands the wrist works better than the fingertips (RTMW 0.847 vs 0.828).
+   - With the same boxes and wrist/ankle keypoints, ViTPose++-H beats RTMW-x (F1 0.795 vs 0.752 at
+     tIoU > 0) at about a third of the speed. RTMW stays the main pose input because only it has
+     fingertips and toes.
+4. **Track 2 reduces false hand contacts, the research question.**
    - Hand precision at tIoU > 0 rises from 0.834 to 0.923.
    - Pooled over the 22 videos, false hand contacts drop from 91 to 38, while correct hand contacts
      rise from 401 to 422 of 481.
    - All-limb F1 is 0.05–0.06 higher than the best Track 1 setting at every threshold.
    - Track 2 chose a 1.0 s minimum duration, so only 40 contacts (4.3%) are too short to find.
-4. **Occlusion.**
+5. **Occlusion.**
    - Track 2 recovers more occluded hand frames than Track 1 (frame recall 0.872 vs 0.779).
    - Occluded foot frames are worse (0.734 vs 0.845), but there are only 990 of them.
-5. **Accurate intervals.** The mean tIoU of matched events is 0.882 for Track 2 (Track 1: 0.836), so
+6. **Accurate intervals.** The mean tIoU of matched events is 0.882 for Track 2 (Track 1: 0.836), so
    detected contacts also have accurate start and end frames.
-6. **No clear effect of climbing experience.** Track 2 F1 at tIoU > 0 is 0.912 for climbers with up to
+7. **No clear effect of climbing experience.** Track 2 F1 at tIoU > 0 is 0.912 for climbers with up to
    2 years (6 participants), 0.924 for 5–10 years (2) and 0.914 for over 10 years (2). The groups are small.
-7. **Track 3.** **[3D line — to be filled in]**
+8. **Track 3.** **[3D line — to be filled in]**
 
 ![Figure 2](../results/figures/track1_overlay_p8_orange.jpg)
 *Figure 2. Track 1 on p8_orange at 18.8 s. Orange: labelled contacts; magenta: Track 1 contacts; red: fingertip and toe keypoints; green / blue: hand / foot hold boxes. All four limbs are on the correct holds.*
@@ -209,6 +234,7 @@ comparable.
 | --- | --- | --- |
 | 2D | Tracker switched to the belayer when the climber was missed for a frame | Route-region filter; 95.7% of contact frames near the labelled hold |
 | 2D | Climber not detected high on the wall (20–30% of contact frames missing in three videos) | Phase 3: larger detector input, tracking through missed frames |
+| 2D | Occluded fingertip keypoints drift (hands are more than 50% occluded in about half of their contact frames) | Track 1 occluded hand frame recall 0.779 vs 0.869 visible; Track 2 and 3D cues target it |
 | 2D | GPU quota 0, then T4/L4 out of stock in every US zone | Quota raised, automatic retries got a T4; Colab notebook as fallback |
 | 2D / learning | Tuning grids chose values at their edge | Grids widened until the choice was inside (choices on training folds only) |
 | Learning | 8.2% of labelled contact frames are unreachable for Track 2 (6.3% no pose, 2.0% hold not a candidate) | Better climber detection and 3D distances should recover part of it |
@@ -219,7 +245,8 @@ comparable.
 **Phase 3 plan:**
 
 - **2D line:** hybrid keypoints (ViTPose wrist for hands, RTMW toes for feet); fewer missed climber
-  frames; Kilter board clips with LED-colour hold detection for a cross-dataset test.
+  frames; faster pose export (fp16, batching); Kilter board clips with a labeling script and LED-colour
+  hold detection for a cross-dataset test.
 - **Learning line:** add the 3D distance features; train a temporal model; run an ablation (remove 2D
   overlap, stillness, context and 3D cues one at a time); build a failure gallery.
 - **3D line:** **[to be filled in]**.
@@ -229,6 +256,6 @@ comparable.
 
 | Member | Line | Phase 2 work |
 | --- | --- | --- |
-| Zongyang Li | 2D line | Data and Drive distribution; 2D pose export (RTMW, ViTPose++) with climber selection, GCP runs and validation; Track 1 baseline and fingertip/toe variant with LOPO tuning; interfaces and documentation; figures and demo videos |
-| Yen-Wei Lin | Learning line | Evaluation module (shared scoring, `evaluate()`, hands/feet, route, occlusion and experience breakdowns, `scripts/evaluate.py`); Track 2 v1 (candidate limb–hold pairs, 2D overlap + stillness + context features, Nystroem SVM, LOPO with inner-fold tuning); Track 2 figures and results; unit tests for all new modules |
+| Zongyang Li | 2D line | Data and Drive distribution; 2D pose export (RTMW, ViTPose++) with climber selection, GCP runs and validation; Track 1 baseline and fingertip/toe variant with LOPO tuning and the first scoring code (now in the evaluation module); ViTPose comparison; interfaces and documentation; figures, demo videos and presentation slides |
+| Yen-Wei Lin | Learning line | Evaluation module (shared scoring, `evaluate()`, hands/feet, route, occlusion and experience breakdowns, `scripts/evaluate.py`); Track 2 v1 (candidate limb–hold pairs, 2D overlap + stillness + context features, Nystroem SVM, LOPO with inner-fold tuning); Track 2 figures and results; unit tests for all new modules; Phase 2 progress report draft |
 | Jinghong Yang | 3D line | **[to be filled in:** WHAM inference; wall pose from the homography; per-frame 3D distances**]** |

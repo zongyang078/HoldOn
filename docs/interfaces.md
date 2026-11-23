@@ -63,13 +63,12 @@ Quirks: [dataset_schema.md](dataset_schema.md).
 
 ## 5. Evaluation — FIXED behaviour, FLEXIBLE code layout (learning line)
 
-The protocol is [evaluation_protocol.md](evaluation_protocol.md). A reference implementation already
-exists and is used for Track 1: `holdon/models/track1_tuning.py` (`match_events`, `video_counts`,
-`macro_metrics`, tested in `tests/models/test_track1_tuning.py`).
-
-The learning line moves that code into `holdon.evaluation` (`matching.py`, `metrics.py`), keeps the
-numbers identical (the tests must still pass against the new location), adds the breakdowns, and then
-points `scripts/tune_track1.py` at it and deletes the copy in `track1_tuning.py`. Required entry points:
+The protocol is [evaluation_protocol.md](evaluation_protocol.md). Implementation: `holdon.evaluation`
+(`matching.py`: `tiou`, `match_events`; `metrics.py`: `video_counts`, `macro_metrics`, `evaluate`;
+`grouped.py`: breakdowns; `report.py`: Markdown tables), tested in `tests/evaluation/`. The scoring code
+was moved unchanged from `holdon/models/track1_tuning.py` (2026-11-21); `scripts/tune_track1.py` uses it,
+and `scripts/evaluate.py` on the Track 1 `events_lopo.csv` reproduces the tune_track1 numbers exactly.
+Entry points:
 
 ```python
 from holdon.evaluation.metrics import evaluate
@@ -83,7 +82,10 @@ python3 scripts/evaluate.py results/track1/rtmw-x-384_2026-11-18_wrist_ankle/eve
 # prints the table and writes metrics.md next to events.csv
 ```
 
-Extra arguments (groups, occlusion) may be added; the call above must keep working.
+`metrics.md` contains all / hands / feet, each route, occluded vs visible frame recall and the
+climber-experience groups (`configs/eval.yaml` → `experience`). `--out` changes the file name (Track 1
+run folders already hold a `metrics.md` from `tune_track1.py`). Extra arguments may be added; the call
+above must keep working.
 
 ## 6. 3D limb-to-hold distances — FIXED format, FLEXIBLE method (3D line)
 
@@ -117,6 +119,12 @@ Internal to the learning line. Constraints: build features only from the pose fi
 distance files (section 6) and hold boxes; one row per video frame (and limb–hold pair if needed),
 aligned by frame index; store versioned tables under `data/processed/features/<name>_<date>/`.
 Reusable 2D cues: `holdon.features.overlap2d` (keypoint-to-box distances), `holdon.preprocessing.smoothing`.
+
+Choice for v1 (`holdon.features.build`, `configs/track2.yaml`): one row per candidate (frame, limb, hold),
+where the candidates of a limb in a frame are the holds within `candidates.radius_px` (80 px) that are also
+among its `candidates.max_per_limb` (3) nearest holds. Features are computed on the fly (about 4 s for all
+22 videos), so no table is stored yet; the candidate coverage of the ground truth is written to
+`results/track2/<run>/candidates.md`.
 
 ## 8. Versioned outputs — FIXED
 

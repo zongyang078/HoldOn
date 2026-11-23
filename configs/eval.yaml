@@ -2,3 +2,7 @@
 tiou_thresholds: [0.0, 0.3, 0.5]   # 0.0 means tIoU > 0; others mean tIoU >= t
 average: macro_over_videos
 groups: [limb_type, route, occlusion, experience]
+experience:                        # climber-experience breakdown (holdon.evaluation.grouped)
+  form: participant_form_data.csv  # inside paths.yaml raw.wayup
+  column: "For how long have you been climbing?"
+  min_participants: 2              # smaller categories are merged with the neighbouring one (no single-person groups)

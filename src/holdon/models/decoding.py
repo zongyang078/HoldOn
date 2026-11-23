@@ -63,3 +63,52 @@ def decode_events(
             score = float(np.nanmean(seg)) if np.isfinite(seg).any() else 0.0
         events.append(ContactEvent(video_id, limb, hold_id, int(start), int(end), score))
     return events
+
+
+def best_hold_per_frame(
+    frames: np.ndarray, holds: np.ndarray, scores: np.ndarray, num_frames: int,
+) -> tuple[np.ndarray, np.ndarray, list[str]]:
+    """For one limb, the highest-scoring candidate hold in every frame.
+
+    Args:
+        frames, holds, scores: (N,) candidate rows of one limb of one video (frame index, hold id,
+            classifier score); a frame may have several candidate holds or none.
+        num_frames: number of frames of the video.
+
+    Returns:
+        ``(best (T,) int, best_score (T,) float, hold_ids)``: index into ``hold_ids`` of the best
+        hold (-1 and score -inf where the frame has no candidate).
+    """
+    hold_ids = sorted(set(np.asarray(holds).tolist()))
+    index = {h: i for i, h in enumerate(hold_ids)}
+    table = np.full((num_frames, max(len(hold_ids), 1)), -np.inf)
+    if len(frames):
+        cols = np.array([index[h] for h in holds])
+        table[np.asarray(frames, dtype=int), cols] = np.asarray(scores, dtype=np.float64)
+    best = np.argmax(table, axis=1)
+    best_score = table[np.arange(num_frames), best]
+    best = np.where(np.isfinite(best_score), best, -1)
+    return best, best_score, hold_ids
+
+
+def decode_best_holds(
+    best: np.ndarray,
+    best_score: np.ndarray,
+    hold_ids: list[str],
+    *,
+    video_id: str,
+    limb: str,
+    threshold: float,
+    min_length: int,
+    max_gap: int,
+) -> list[ContactEvent]:
+    """Events from ``best_hold_per_frame``: a frame is a contact with its best hold if the score is
+    above ``threshold``; then ``decode_events`` per hold. Event score = mean frame score."""
+    on = (best >= 0) & (best_score > threshold)
+    events: list[ContactEvent] = []
+    for h, hold_id in enumerate(hold_ids):
+        mask = on & (best == h)
+        if mask.any():
+            events += decode_events(mask, video_id=video_id, limb=limb, hold_id=hold_id,
+                                    min_length=min_length, max_gap=max_gap, frame_scores=best_score)
+    return events

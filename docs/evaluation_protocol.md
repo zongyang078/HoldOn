@@ -1,7 +1,7 @@
 # Evaluation protocol
 
-Shared by all three tracks. Reference implementation: `holdon/models/track1_tuning.py` (moving to
-`holdon.evaluation`, see [interfaces.md](interfaces.md) section 5). Every rule below is fixed.
+Shared by all three tracks. Implementation: `holdon.evaluation` and `scripts/evaluate.py`
+(see [interfaces.md](interfaces.md) section 5). Every rule below is fixed.
 
 ## Matching
 
@@ -35,7 +35,7 @@ Shared by all three tracks. Reference implementation: `holdon/models/track1_tuni
 | Hands / feet | filter **both** predictions and ground truth to the two hand (or foot) limbs, then score as above |
 | Route | macro average over the 11 videos of one route |
 | Occluded / visible | frame recall: share of ground-truth contact frames inside (resp. outside) the event's `framesOccluded` ranges that are covered by any prediction with the same limb and hold |
-| Climber experience | group videos by `For how long have you been climbing?` in `participant_form_data.csv` (4 categories); report group averages only, never per person |
+| Climber experience | group videos by `For how long have you been climbing?` in `participant_form_data.csv` (4 categories); report group averages only, never per person. A category with fewer than 2 participants is merged with the neighbouring one (only 1 participant answered `less than 1 year`, so it is reported together with `1-2 years`; `configs/eval.yaml` → `experience.min_participants`) |
 
 ## Tuning and splits
 

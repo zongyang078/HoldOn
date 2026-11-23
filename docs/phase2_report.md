@@ -256,6 +256,6 @@ comparable.
 
 | Member | Line | Phase 2 work |
 | --- | --- | --- |
-| Zongyang Li | 2D line | Data and Drive distribution; 2D pose export (RTMW, ViTPose++) with climber selection, GCP runs and validation; Track 1 baseline and fingertip/toe variant with LOPO tuning and the first scoring code (now in the evaluation module); ViTPose comparison; interfaces and documentation; figures, demo videos and presentation slides |
-| Yen-Wei Lin | Learning line | Evaluation module (shared scoring, `evaluate()`, hands/feet, route, occlusion and experience breakdowns, `scripts/evaluate.py`); Track 2 v1 (candidate limb–hold pairs, 2D overlap + stillness + context features, Nystroem SVM, LOPO with inner-fold tuning); Track 2 figures and results; unit tests for all new modules; Phase 2 progress report draft |
+| Zongyang Li | 2D line | Data and Drive distribution; 2D pose export (RTMW, ViTPose++) with climber selection, GCP runs and validation; Track 1 baseline and fingertip/toe variant with LOPO tuning and the first scoring code (now in the evaluation module); ViTPose comparison; interfaces and documentation; figures, Track 1 demo videos and slide material |
+| Yen-Wei Lin | Learning line | Evaluation module (shared scoring, `evaluate()`, hands/feet, route, occlusion and experience breakdowns, `scripts/evaluate.py`); Track 2 v1 (candidate limb–hold pairs, 2D overlap + stillness + context features, Nystroem SVM, LOPO with inner-fold tuning); Track 2 figures and results; unit tests for all new modules; Phase 2 progress report draft; presentation slides |
 | Jinghong Yang | 3D line | **[to be filled in:** WHAM inference; wall pose from the homography; per-frame 3D distances**]** |

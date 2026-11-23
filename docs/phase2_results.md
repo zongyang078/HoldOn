@@ -271,9 +271,9 @@ challenges, next steps.
 
 | Member | Line | Phase 2 work |
 | --- | --- | --- |
-| Zongyang Li | 2D line | Data and Drive distribution; 2D pose export (RTMW, ViTPose++) with climber selection, GCP runs and validation; Track 1 baseline and fingertip/toe variant with LOPO tuning; reference scoring; interfaces and documentation; figures |
-| Yen-Wei Lin | Learning line | Evaluation module (`holdon.evaluation`: scoring moved from Track 1 with identical numbers, `evaluate()` entry point, hands/feet, route, occlusion and experience breakdowns, `scripts/evaluate.py`); Track 2 v1 (candidate limb–hold pairs, 2D overlap + stillness + temporal-context features, Nystroem SVM, LOPO with inner-fold decoding tuning, `scripts/run_track2.py`); Track 2 results and report material (§9.1–9.5); unit tests for all new modules |
-| Jinghong Yang | 3D line | WHAM inference; wall pose from the homography; per-frame 3D distances — _details pending_ |
+| Zongyang Li | 2D line | Data and Drive distribution; 2D pose export (RTMW, ViTPose++) with climber selection, GCP runs and validation; Track 1 baseline and fingertip/toe variant with LOPO tuning; first scoring code (now in `holdon.evaluation`); ViTPose comparison; interfaces and documentation; figures, Track 1 demo videos and slide material |
+| Yen-Wei Lin | Learning line | Evaluation module (`holdon.evaluation`: scoring moved from Track 1 with identical numbers, `evaluate()` entry point, hands/feet, route, occlusion and experience breakdowns, `scripts/evaluate.py`); Track 2 v1 (candidate limb–hold pairs, 2D overlap + stillness + temporal-context features, Nystroem SVM, LOPO with inner-fold decoding tuning, `scripts/run_track2.py`); Track 2 results and report material (§9.1–9.5); unit tests for all new modules; Phase 2 progress report draft; presentation slides |
+| Jinghong Yang | 3D line | WHAM runner on the 2D line's climber keypoints (`p3_orange` coverage 26% → 96%); wall pose with one shared focal length and the bolt-hole order fix; 3D limb-to-hold distance code (`feature/3d-line`) — _details pending_ |
 
 ## 11. Report outline (Phase 2 progress report, suggested 3–5 pages)
 

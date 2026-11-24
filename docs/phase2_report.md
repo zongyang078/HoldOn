@@ -1,7 +1,7 @@
 # Hold On — Phase 2 Progress Report
 
 **Hand/Foot–Hold Contact Detection from Monocular Climbing Video**
-CS 5330 Pattern Recognition and Computer Vision, Fall 2026 — Team 06: Zongyang Li, Yen-Wei Lin, Jinghong Yang
+CS 5330, Fall 2026 — Team 06: Zongyang Li, Yen-Wei Lin, Jinghong Yang
 
 **Submission links**
 
@@ -10,8 +10,6 @@ CS 5330 Pattern Recognition and Computer Vision, Fall 2026 — Team 06: Zongyang
 | Prototype and source code (branch `main`; setup and reproduction steps in `README.md`) | https://github.com/zongyang078/HoldOn |
 | Demo videos, slides and slide material (folder `phase2_progress/`) | https://drive.google.com/drive/folders/1XWcjto1pSWkWLWmeqXtztriikkjzU9bY |
 | Dataset copy and versioned pose files | https://drive.google.com/drive/folders/14LDiwWxDYSHDEanNLgf-o8uWpW3GYr23 |
-
-> Numbers come from `docs/phase2_results.md` (Track 3: §9.6) and `results/tables/track3_wall_pose.md`.
 
 ## 1. Overview
 

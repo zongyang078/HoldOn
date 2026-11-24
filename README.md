@@ -14,7 +14,7 @@ We compare three tracks under the same splits and metrics:
 
 **Phase 2 status** (macro F1 over 22 videos, held-out LOPO predictions, tIoU > 0 / ≥ 0.5): Track 1 fingertip/toe
 0.864 / 0.790; Track 2 v1 0.915 / 0.853, with false hand contacts down from 91 to 38; Track 3: WHAM runner, wall
-pose for all 22 videos and distance code merged; the first distance file shows a depth bias, so Track 3
+pose for all 22 videos and distance code merged; the first distance files (2 videos) show a depth bias, so Track 3
 numbers follow in Phase 3. Details: [docs/phase2_results.md](docs/phase2_results.md),
 report: [docs/phase2_report.md](docs/phase2_report.md).
 
@@ -122,8 +122,8 @@ them as needed.
 - 20 of the 22 `*_bolt_holes.json` files list the two top bolt holes in swapped order, so their stored
   `homography_mat` is wrong away from the four points. Track 1 and Track 2 do not use it; the 3D line repairs
   the order before computing the wall pose.
-- WHAM's absolute depth places the body behind the wall plane, so the first 3D distances pick a hold above
-  the labelled one; the depth must be anchored to the wall before Track 3 or Track 2 uses them.
+- WHAM's absolute depth places the body 0.3–0.6 m behind the wall plane (`p3_orange`, `p8_orange`), so the
+  first 3D distances pick a hold above the labelled one; the depth must be anchored to the wall before Track 3 or Track 2 uses them.
 - `tests/data/test_archive.py::test_check_layout` fails on Windows only (path separator); all other tests pass there.
 - SMPL files (needed by WHAM) are licensed per person: whoever runs WHAM registers at smpl.is.tue.mpg.de.
   No other model needs an account; pose weights download automatically.
@@ -180,7 +180,7 @@ them as needed.
 
 - **Zongyang Li:** data and Drive distribution; 2D pose export (RTMW, ViTPose++) with climber selection, GCP runs and validation; Track 1 baseline and fingertip/toe variant with LOPO tuning; first scoring code (now in `holdon.evaluation`); ViTPose comparison; interfaces and documentation; figures, Track 1 demo videos and slide material.
 - **Yen-Wei Lin:** evaluation module (scoring moved from Track 1 with identical numbers, `evaluate()`, hands/feet, route, occlusion and experience breakdowns, `scripts/evaluate.py`); Track 2 v1 (candidate limb–hold pairs, 2D overlap + stillness + temporal-context features, Nystroem SVM, LOPO with inner-fold tuning, `scripts/run_track2.py`); Track 2 results and figures; Phase 2 progress report draft; presentation slides.
-- **Jinghong Yang:** WHAM runner on the 2D line's climber keypoints (coverage on `p3_orange` 26% → 96% vs WHAM's own tracker); wall pose with one shared focal length and the bolt-hole order fix; 3D limb-to-hold distance module and the first distance file (`p3_orange`) with the depth-bias diagnosis; WHAM Colab set-up.
+- **Jinghong Yang:** WHAM runner on the 2D line's climber keypoints (coverage on `p3_orange` 26% → 96% vs WHAM's own tracker); wall pose with one shared focal length and the bolt-hole order fix; 3D limb-to-hold distance module and the first distance files (`p3_orange`, `p8_orange`) with the depth-bias diagnosis; WHAM Colab set-up.
 
 Results and report material: [docs/phase2_results.md](docs/phase2_results.md).
 

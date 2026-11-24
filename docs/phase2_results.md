@@ -291,28 +291,36 @@ Findings (each follows from the table above unless another file is named):
 - **3D distances (`holdon.features.distance3d`, `scripts/make_distance3d.py`).** Per frame, limb and hold:
   smallest Euclidean distance from the limb's contact vertices to the hold box mapped onto the wall plane
   (points behind the plane count as on it). Files in the shared format (`docs/interfaces.md` §6), checked
-  with `load_distance3d`. First file: `data/processed/distance3d/wham3d_2026-11-24/p3_orange.npz`
-  (967 × 4 × 31, NaN in the 4.0% of frames without a body).
+  with `load_distance3d`. First files: `data/processed/distance3d/wham3d_2026-11-24/` with `p3_orange`
+  (967 × 4 × 31, NaN in the 4.0% of frames without a body) and `p8_orange` (985 × 4 × 31, body in every
+  frame); WHAM files in `data/interim/wham/wham-vitposebox_2026-11-24/` (reprojection median 11.6 / 9.8 px).
 - **Tests:** 17 new unit tests (synthetic camera, wall and body: bolt-hole repair, focal estimate, pose
   recovery, point-to-hold distance, file round trip, focal mismatch); 100 tests pass after merging `main`.
 
-**First result: the distances do not yet pick the right hold** (`p3_orange`, labelled contact frames;
-`w` contacts excluded)
+**First result: the distances do not yet pick the right hold** (labelled contact frames; `w` contacts
+excluded)
 
-| Limb | Contact frames | Distance to the labelled hold (median) | Labelled hold is the nearest hold | Not in contact: distance to the nearest hold (median) |
-| --- | --- | --- | --- | --- |
-| left hand | 692 | 0.36 m | 5.6% | 0.02 m |
-| right hand | 712 | 0.30 m | 26.3% | 0.01 m |
-| left foot | 627 | 0.27 m | 27.1% | 0.05 m |
-| right foot | 580 | 0.28 m | 17.1% | 0.09 m |
+| Video | Limb | Contact frames | Distance to the labelled hold (median) | Labelled hold is the nearest hold | Not in contact: distance to the nearest hold (median) |
+| --- | --- | --- | --- | --- | --- |
+| p3_orange | left hand | 692 | 0.36 m | 5.6% | 0.02 m |
+| p3_orange | right hand | 712 | 0.30 m | 26.3% | 0.01 m |
+| p3_orange | left foot | 627 | 0.27 m | 27.1% | 0.05 m |
+| p3_orange | right foot | 580 | 0.28 m | 17.1% | 0.09 m |
+| p8_orange | left hand | 868 | 0.60 m | 2.9% | 0.03 m |
+| p8_orange | right hand | 868 | 0.59 m | 13.1% | 0.09 m |
+| p8_orange | left foot | 663 | 0.43 m | 12.7% | 0.01 m |
+| p8_orange | right foot | 669 | 0.40 m | 15.4% | 0.10 m |
 
-A frame-level rule "nearest hold within a threshold" reaches only F1 ≈ 0.14 for any threshold from 0.05 to
-0.5 m. Left and right are not swapped (cross-limb check). The error is systematic: the nearest hold is
-almost always one *higher* on the wall than the labelled one (e.g. labelled 21 → nearest 25, 25 → 28). Our
+On `p3_orange` a frame-level rule "nearest hold within a threshold" reaches only F1 ≈ 0.14 for any
+threshold from 0.05 to 0.5 m. Left and right are not swapped (cross-limb check). The error is systematic: the nearest hold is
+almost always one *higher* on the wall than the labelled one (e.g. labelled 21 → nearest 25, 25 → 28; when
+the nearest hold is wrong it is higher in the image in 73–94% of frames on `p3_orange`, 80–97% on
+`p8_orange`). Our
 reading: WHAM's absolute depth is biased, placing the body behind the wall plane; the camera is low and
 close (2.6 m) and looks up, so a depth error moves the body along the viewing ray and up the wall, and the
-far-side clamp then makes it "touch" holds above. This still has to be confirmed on the WHAM file (wall-plane
-z of the body). The summary printed by `make_distance3d.py` ("in contact 0.312 m, otherwise 1.571 m") is
+far-side clamp then makes it "touch" holds above. **Confirmed on the WHAM files:** in the wall frame the
+pelvis lies a median 0.34 m (`p3_orange`) and 0.63 m (`p8_orange`) *behind* the wall plane, the wrists
+0.73 m and 0.99 m. The summary printed by `make_distance3d.py` ("in contact 0.312 m, otherwise 1.571 m") is
 not evidence of separation: "otherwise" includes frames far from the hold; it will be replaced by the
 nearest-hold accuracy above. `versions.distance3d` therefore stays `null`; Track 2 keeps `distance3d: false`.
 
@@ -324,11 +332,12 @@ nearest-hold accuracy above. `versions.distance3d` therefore stays `null`; Track
 | Swapped bolt holes | 20 of 22 files: top pair in swapped order, stored homography wrong | Solved: order repaired before fitting (`docs/dataset_schema.md`) |
 | Unknown intrinsics | WHAM assumes 1469 px; the bolt holes say 590 px (error ~10 px vs 0.86 px) | Solved: one fitted focal length shared by WHAM and the wall pose |
 | Colab environment | The WHAM notebook installs conda (condacolab); `python3` then lacks torch and our packages | Documented: install our dependencies into base, run WHAM with `source activate wham && python` |
-| Absolute depth | Body placed behind the wall plane; nearest hold wrong in 73–94% of contact frames | Open (next step) |
+| Absolute depth | Body 0.3–0.6 m behind the wall plane (pelvis); labelled hold is the nearest in only 3–27% of contact frames (2 videos) | Open (next step) |
 
 **Next steps (Phase 3)**
 
-1. Confirm the depth bias on the WHAM file (wall-plane z of torso and limbs; reprojection error).
+1. ~~Confirm the depth bias on the WHAM file~~ (done: pelvis 0.34 / 0.63 m behind the wall); check the
+   reprojection error (median 10–12 px) once depth is fixed.
 2. Anchor depth to the wall: keep every point's 2D projection and rescale the body along the viewing rays so
    the torso lies a fixed distance in front of the wall (tuned on training folds). WHAM then contributes the
    *relative* depth of hands and feet versus the torso, which is the cue that separates "on the hold" from
@@ -342,7 +351,7 @@ nearest-hold accuracy above. `versions.distance3d` therefore stays `null`; Track
 | --- | --- | --- |
 | Zongyang Li | 2D line | Data and Drive distribution; 2D pose export (RTMW, ViTPose++) with climber selection, GCP runs and validation; Track 1 baseline and fingertip/toe variant with LOPO tuning; first scoring code (now in `holdon.evaluation`); ViTPose comparison; interfaces and documentation; figures, Track 1 demo videos and slide material |
 | Yen-Wei Lin | Learning line | Evaluation module (`holdon.evaluation`: scoring moved from Track 1 with identical numbers, `evaluate()` entry point, hands/feet, route, occlusion and experience breakdowns, `scripts/evaluate.py`); Track 2 v1 (candidate limb–hold pairs, 2D overlap + stillness + temporal-context features, Nystroem SVM, LOPO with inner-fold decoding tuning, `scripts/run_track2.py`); Track 2 results and report material (§9.1–9.5); unit tests for all new modules; Phase 2 progress report draft; presentation slides |
-| Jinghong Yang | 3D line | WHAM runner on the 2D line's climber keypoints (`p3_orange` coverage 26% → 96%); wall pose with one shared focal length and the bolt-hole order fix; 3D limb-to-hold distance module and distance files (first: `p3_orange`), with the depth-bias diagnosis; WHAM Colab set-up and docs; unit tests for the new modules (§9.6) |
+| Jinghong Yang | 3D line | WHAM runner on the 2D line's climber keypoints (`p3_orange` coverage 26% → 96%); wall pose with one shared focal length and the bolt-hole order fix; 3D limb-to-hold distance module and distance files (`p3_orange`, `p8_orange`), with the depth-bias diagnosis; WHAM Colab set-up and docs; unit tests for the new modules (§9.6) |
 
 ## 11. Report outline (Phase 2 progress report, suggested 3–5 pages)
 

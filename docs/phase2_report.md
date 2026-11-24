@@ -30,7 +30,7 @@ the same data, splits and scorer:
 
 **Phase 2 delivers** 2D pose for all 22 videos, Track 1 and Track 2 scored with leave-one-participant-out
 (LOPO), one shared evaluation module, and the Track 3 setup (WHAM on our climber tracks, wall pose for all
-videos, distance code and a first distance file). The first 3D check shows a depth bias, so Track 3 contact
+videos, distance code and the first distance files). The first 3D check shows a depth bias, so Track 3 contact
 numbers follow in Phase 3.
 
 ## 2. System architecture
@@ -109,12 +109,13 @@ video ──> WHAM body + wall pose ──> 3D distances ───────�
   onto the wall measure 10 × 9 cm (median), a plausible scale.
 - **3D distance:** smallest distance from the hand or foot contact vertices (palm and fingers; sole, heel,
   toes) to each hold's box on the wall plane, written in the shared distance format for Track 3's contact
-  rule and, in Phase 3, Track 2's features. Code and 17 unit tests are done; the first file is `p3_orange`.
-- **First check (`p3_orange`, labelled contact frames):** the labelled hold is the nearest hold in only
-  6–27% of frames per limb, and a frame-level "nearest hold within a threshold" rule reaches F1 ≈ 0.14 at any
-  threshold from 0.05 to 0.5 m. The error is systematic: the nearest hold is almost always one *higher* on
-  the wall. Likely cause: WHAM's absolute depth places the body behind the wall plane, and with the camera
-  2.6 m away looking up, a depth error moves the body up the wall. The distance files are therefore not
+  rule and, in Phase 3, Track 2's features. Code and 17 unit tests are done; first files: `p3_orange`, `p8_orange`.
+- **First check (`p3_orange`, `p8_orange`, labelled contact frames):** the labelled hold is the nearest
+  hold in only 3–27% of frames per limb; on `p3_orange` a frame-level "nearest hold within a threshold"
+  rule reaches F1 ≈ 0.14 at any threshold from 0.05 to 0.5 m. The error is systematic: the nearest hold is
+  almost always one *higher* on the wall. Cause, confirmed on the WHAM files: WHAM's absolute depth places
+  the body behind the wall plane (pelvis 0.34 m and 0.63 m behind it), and with the camera 2.6 m away
+  looking up, a depth error moves the body up the wall. The distance files are therefore not
   yet used by Track 2 (`versions.distance3d` stays unset).
 
 ![Figure 5](../results/figures/track3_wham_p3_orange.jpg)
@@ -143,7 +144,7 @@ F1 (precision / recall / **F1** for the main rows), macro over 22 videos, held-o
 | — feet | 0.959 / 0.868 / **0.908** | 0.956 / 0.865 / **0.905** | 0.923 / 0.835 / **0.874** |
 | Track 1 ViTPose++-H wrist/ankle (paper setting) | **0.795** | **0.770** | **0.706** |
 | Untuned 0.5 s rule, fingertip/toe | **0.631** | **0.426** | **0.254** |
-| Track 3 (first check, `p3_orange` only, frame level) | F1 ≈ 0.14; depth bias, see §3.5 | | |
+| Track 3 (first check, frame level) | `p3_orange` F1 ≈ 0.14; labelled hold nearest in 3–27% of contact frames (2 videos); depth bias, §3.5 | | |
 
 For context only: The Way Up reports about 86.6% (tIoU > 0) and 69% (tIoU > 0.5) *accuracy* for its
 ViTPose baseline, a different metric from our F1.
@@ -163,8 +164,8 @@ ViTPose baseline, a different metric from our F1.
    (Track 2).
 5. **The 3D setup runs, but depth is not yet usable.** Our climber tracks raise WHAM's coverage from 26%
    to 96%, and the fitted focal length places the wall within 0.86 px of the bolt holes in all 22 videos.
-   The first distance file, however, picks the labelled hold in only 6–27% of contact frames because of a
-   systematic depth bias (§3.5).
+   The first distance files (2 videos), however, pick the labelled hold in only 3–27% of contact frames:
+   WHAM places the body 0.3–0.6 m behind the wall (§3.5).
 
 ![Figure 2](../results/figures/track1_overlay_p8_orange.jpg)
 *Figure 2. Track 1 on p8_orange. Orange: labelled contact holds; magenta: Track 1; red: fingertips and toes. All four limbs are on the correct holds.*
@@ -194,7 +195,7 @@ ViTPose baseline, a different metric from our F1.
 | Learning | 8.2% of contact frames cannot be predicted (6.3% without pose, 2.0% hold not a candidate) | Open |
 | 3D | WHAM's own tracker loses the climber (≤ 26% of frames) | Solved: our climber keypoints, 96% |
 | 3D | Bolt holes in swapped order in 20 of 22 files; camera intrinsics unknown | Solved: order repaired, one fitted focal length (0.86 px) |
-| 3D | WHAM's absolute depth puts the body behind the wall; nearest hold wrong in 73–94% of contact frames | Open: anchor the body depth to the wall (fallback: 2.5D distance in the wall plane) |
+| 3D | WHAM's absolute depth puts the body 0.3–0.6 m behind the wall; labelled hold nearest in only 3–27% of contact frames | Open: anchor the body depth to the wall (fallback: 2.5D distance in the wall plane) |
 
 **Phase 3:** anchor WHAM's depth to the wall (keep each point's 2D projection, rescale along the viewing
 rays), then run WHAM and the 3D distances on all 22 videos and score Track 3; add the 3D distances to
@@ -208,4 +209,4 @@ tracks on the same splits.
 | --- | --- | --- |
 | Zongyang Li | 2D line | Data and Drive distribution; 2D pose export (RTMW, ViTPose++) with climber selection on GCP and its validation; Track 1 and its fingertip/toe variant with LOPO tuning; first scoring code; documentation; figures, demo videos and slide material |
 | Yen-Wei Lin | Learning line | Evaluation module (shared scorer and breakdowns); Track 2 v1 (candidates, features, SVM, LOPO tuning) and its results; progress report draft; presentation slides |
-| Jinghong Yang | 3D line | WHAM runner on the 2D line's climber keypoints; bolt-hole repair and shared focal length for the wall pose of all 22 videos; 3D limb-to-hold distance module with unit tests; first distance file and the depth-bias diagnosis; WHAM Colab set-up |
+| Jinghong Yang | 3D line | WHAM runner on the 2D line's climber keypoints; bolt-hole repair and shared focal length for the wall pose of all 22 videos; 3D limb-to-hold distance module with unit tests; first distance files and the depth-bias diagnosis; WHAM Colab set-up |

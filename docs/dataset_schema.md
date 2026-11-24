@@ -84,6 +84,13 @@ rf 0,100,194,
 - **`p2a/green`: N = 350 and no `homography_mat`.** The loader estimates it with
   `cv2.findHomography(..., RANSAC, 5.0)`: 350/350 inliers, median reprojection error 1.2, p95 2.2 (wall units).
 - Wall y axis points up (image y points down).
+- **20 of the 22 four-point files list the two top bolt holes in swapped order** (image x of wall
+  `(0, 510)` is right of `(135, 510)`), so their stored `homography_mat` maps a twisted quadrilateral
+  and is wrong away from the four points. `holdon.preprocessing.homography.fix_bolt_hole_order` restores
+  the order; then all 22 fit one pinhole camera (focal 590 px) within 2.5 px
+  ([results/tables/track3_wall_pose.md](../results/tables/track3_wall_pose.md)). `WallReference.homography`
+  still holds the stored matrix; Track 3 uses the repaired wall pose.
+- Units are centimetres: hold boxes mapped to the wall are 10 × 9 cm (median).
 
 ## `participant_form_data.csv` — participant demographics
 

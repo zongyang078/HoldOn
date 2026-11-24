@@ -1,5 +1,8 @@
 # Track 3: 3D pipeline (owner: 3D line). WHAM body + wall pose from the bolt-hole homography.
-focal_length_px: null        # null = estimate; camera intrinsics are unknown
+# Camera: intrinsics are unknown. One focal length for all videos, fitted to the bolt holes
+# (scripts/wall_pose.py, results/tables/track3_wall_pose.md); principal point = image centre.
+# WHAM must run with the same value (external/wham/run_wham.py reads it from here).
+focal_length_px: 590
 fallback_2p5d: false         # true = distances in the wall plane (method "2.5d" in docs/interfaces.md)
 
 # Contact rule applied to the distance files (holdon.models.rules.events_from_distances),

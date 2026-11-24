@@ -11,8 +11,7 @@ CS 5330 Pattern Recognition and Computer Vision, Fall 2026 — Team 06: Zongyang
 | Demo videos, slides and slide material (folder `phase2_progress/`) | https://drive.google.com/drive/folders/1XWcjto1pSWkWLWmeqXtztriikkjzU9bY |
 | Dataset copy and versioned pose files | https://drive.google.com/drive/folders/14LDiwWxDYSHDEanNLgf-o8uWpW3GYr23 |
 
-> Numbers come from `docs/phase2_results.md` and, for Track 3, `external/wham/README.md` and
-> `results/tables/track3_wall_pose.md` on the 3D line's branch.
+> Numbers come from `docs/phase2_results.md` (Track 3: §9.6) and `results/tables/track3_wall_pose.md`.
 
 ## 1. Overview
 
@@ -31,7 +30,8 @@ the same data, splits and scorer:
 
 **Phase 2 delivers** 2D pose for all 22 videos, Track 1 and Track 2 scored with leave-one-participant-out
 (LOPO), one shared evaluation module, and the Track 3 setup (WHAM on our climber tracks, wall pose for all
-videos, distance code). Track 3 contact numbers follow in Phase 3.
+videos, distance code and a first distance file). The first 3D check shows a depth bias, so Track 3 contact
+numbers follow in Phase 3.
 
 ## 2. System architecture
 
@@ -46,7 +46,7 @@ video ──> WHAM body + wall pose ──> 3D distances ───────�
 - **Versioned data:** pose and 3D files are exported once in their own environments (GPU / Colab), stored
   under a version name on Google Drive and selected in `configs/paths.yaml`.
 - **Code:** reusable modules in `src/holdon/` (data, preprocessing, features, models, training, evaluation,
-  visualization); thin `scripts/`; YAML configs; 80+ CPU-only unit tests. One branch per member, merged
+  visualization); thin `scripts/`; YAML configs; 100 CPU-only unit tests. One branch per member, merged
   through pull requests.
 
 ## 3. Implementation
@@ -109,7 +109,16 @@ video ──> WHAM body + wall pose ──> 3D distances ───────�
   onto the wall measure 10 × 9 cm (median), a plausible scale.
 - **3D distance:** smallest distance from the hand or foot contact vertices (palm and fingers; sole, heel,
   toes) to each hold's box on the wall plane, written in the shared distance format for Track 3's contact
-  rule and, in Phase 3, Track 2's features. Code and unit tests are done.
+  rule and, in Phase 3, Track 2's features. Code and 17 unit tests are done; the first file is `p3_orange`.
+- **First check (`p3_orange`, labelled contact frames):** the labelled hold is the nearest hold in only
+  6–27% of frames per limb, and a frame-level "nearest hold within a threshold" rule reaches F1 ≈ 0.14 at any
+  threshold from 0.05 to 0.5 m. The error is systematic: the nearest hold is almost always one *higher* on
+  the wall. Likely cause: WHAM's absolute depth places the body behind the wall plane, and with the camera
+  2.6 m away looking up, a depth error moves the body up the wall. The distance files are therefore not
+  yet used by Track 2 (`versions.distance3d` stays unset).
+
+![Figure 5](../results/figures/track3_wham_p3_orange.jpg)
+*Figure 5. WHAM on p3_orange (frame 608), driven by our climber keypoints and the fitted 590 px focal length: input (left), SMPL body (right). The body aligns well in 2D; its depth relative to the wall is the open problem.*
 
 ## 4. Tools and libraries
 
@@ -134,7 +143,7 @@ F1 (precision / recall / **F1** for the main rows), macro over 22 videos, held-o
 | — feet | 0.959 / 0.868 / **0.908** | 0.956 / 0.865 / **0.905** | 0.923 / 0.835 / **0.874** |
 | Track 1 ViTPose++-H wrist/ankle (paper setting) | **0.795** | **0.770** | **0.706** |
 | Untuned 0.5 s rule, fingertip/toe | **0.631** | **0.426** | **0.254** |
-| Track 3 | contact numbers in Phase 3 | | |
+| Track 3 (first check, `p3_orange` only, frame level) | F1 ≈ 0.14; depth bias, see §3.5 | | |
 
 For context only: The Way Up reports about 86.6% (tIoU > 0) and 69% (tIoU > 0.5) *accuracy* for its
 ViTPose baseline, a different metric from our F1.
@@ -152,8 +161,10 @@ ViTPose baseline, a different metric from our F1.
    and cannot be found. Track 2 needs only 1.0 s.
 4. **Accurate intervals.** Matched contacts overlap their labels with mean tIoU 0.836 (Track 1) and 0.882
    (Track 2).
-5. **The 3D setup works.** Our climber tracks raise WHAM's coverage from 26% to 96%, and the fitted focal
-   length places the wall within 0.86 px of the bolt holes in all 22 videos.
+5. **The 3D setup runs, but depth is not yet usable.** Our climber tracks raise WHAM's coverage from 26%
+   to 96%, and the fitted focal length places the wall within 0.86 px of the bolt holes in all 22 videos.
+   The first distance file, however, picks the labelled hold in only 6–27% of contact frames because of a
+   systematic depth bias (§3.5).
 
 ![Figure 2](../results/figures/track1_overlay_p8_orange.jpg)
 *Figure 2. Track 1 on p8_orange. Orange: labelled contact holds; magenta: Track 1; red: fingertips and toes. All four limbs are on the correct holds.*
@@ -171,7 +182,7 @@ ViTPose baseline, a different metric from our F1.
 | Contact events from monocular video | Done for Tracks 1 and 2, one shared format and scorer |
 | Reproduce the 2D baseline of The Way Up | Done (ViTPose wrist/ankle, F1 0.795 at tIoU > 0) |
 | Fewer false hand contacts with temporal cues | Shown: 91 → 38 with Track 2, recall kept |
-| Fewer false hand contacts with 3D cues | Setup works; numbers in Phase 3 |
+| Fewer false hand contacts with 3D cues | Pipeline runs; depth bias to fix first, numbers in Phase 3 |
 
 ## 6. Challenges and planned improvements
 
@@ -183,8 +194,10 @@ ViTPose baseline, a different metric from our F1.
 | Learning | 8.2% of contact frames cannot be predicted (6.3% without pose, 2.0% hold not a candidate) | Open |
 | 3D | WHAM's own tracker loses the climber (≤ 26% of frames) | Solved: our climber keypoints, 96% |
 | 3D | Bolt holes in swapped order in 20 of 22 files; camera intrinsics unknown | Solved: order repaired, one fitted focal length (0.86 px) |
+| 3D | WHAM's absolute depth puts the body behind the wall; nearest hold wrong in 73–94% of contact frames | Open: anchor the body depth to the wall (fallback: 2.5D distance in the wall plane) |
 
-**Phase 3:** run WHAM and the 3D distances on all 22 videos and score Track 3; add the 3D distances to
+**Phase 3:** anchor WHAM's depth to the wall (keep each point's 2D projection, rescale along the viewing
+rays), then run WHAM and the 3D distances on all 22 videos and score Track 3; add the 3D distances to
 Track 2 and try a temporal model (GRU / 1D-CNN) with an ablation of each cue; combine the best hand and
 foot keypoints and reduce missed climber frames; test on our own Kilter board clips; compare the three
 tracks on the same splits.
@@ -195,4 +208,4 @@ tracks on the same splits.
 | --- | --- | --- |
 | Zongyang Li | 2D line | Data and Drive distribution; 2D pose export (RTMW, ViTPose++) with climber selection on GCP and its validation; Track 1 and its fingertip/toe variant with LOPO tuning; first scoring code; documentation; figures, demo videos and slide material |
 | Yen-Wei Lin | Learning line | Evaluation module (shared scorer and breakdowns); Track 2 v1 (candidates, features, SVM, LOPO tuning) and its results; progress report draft; presentation slides |
-| Jinghong Yang | 3D line | WHAM runner on the 2D line's climber keypoints; bolt-hole repair and shared focal length for the wall pose of all 22 videos; 3D limb-to-hold distance module with unit tests |
+| Jinghong Yang | 3D line | WHAM runner on the 2D line's climber keypoints; bolt-hole repair and shared focal length for the wall pose of all 22 videos; 3D limb-to-hold distance module with unit tests; first distance file and the depth-bias diagnosis; WHAM Colab set-up |

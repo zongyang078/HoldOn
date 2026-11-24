@@ -55,3 +55,34 @@ def highlight_holds(
         if hold.hold_id in wanted:
             cv2.rectangle(out, (hold.x1 - pad, hold.y1 - pad), (hold.x2 + pad, hold.y2 + pad), color, thickness)
     return out
+
+
+def contact_panel(
+    width: int, gt: dict[str, str | None], pred: dict[str, str | None], header: str = "",
+    limbs: Iterable[str] = ("left_hand", "right_hand", "left_foot", "right_foot"),
+) -> np.ndarray:
+    """White status band: one row per limb with the labeled and the predicted hold (``-`` = none).
+
+    A row is green when both agree (same hold, or both none) and red otherwise.
+
+    Args:
+        width: band width in pixels (usually the frame width).
+        gt: limb -> labeled hold id at this frame, or None.
+        pred: limb -> predicted hold id at this frame, or None.
+        header: optional first line, e.g. video id and time.
+    """
+    font, scale, step = cv2.FONT_HERSHEY_SIMPLEX, 0.6, 26
+    limbs = list(limbs)
+    rows = ([header] if header else []) + [""] * len(limbs)
+    band = np.full((step * len(rows) + 10, width, 3), 255, np.uint8)
+    y = step
+    if header:
+        cv2.putText(band, header, (8, y), font, scale, (0, 0, 0), 1, cv2.LINE_AA)
+        y += step
+    for limb in limbs:
+        g, p = gt.get(limb), pred.get(limb)
+        color = (0, 140, 0) if g == p else (0, 0, 220)
+        text = f"{limb.replace('_', ' '):<10}  labeled {g or '-':>3}   Track 1 {p or '-':>3}"
+        cv2.putText(band, text, (8, y), font, scale, color, 1, cv2.LINE_AA)
+        y += step
+    return band

@@ -25,7 +25,8 @@ from holdon.data import wayup
 from holdon.data.external import load_pose2d, pose2d_path
 from holdon.events import write_events
 from holdon.models.rules import track1_events
-from holdon.models.track1_tuning import FEET, HANDS, expand_grid, lopo_tune, macro_metrics, video_counts
+from holdon.evaluation.metrics import FEET, HANDS, macro_metrics, video_counts
+from holdon.models.track1_tuning import expand_grid, lopo_tune
 
 
 def main() -> None:

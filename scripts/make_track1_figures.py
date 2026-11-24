@@ -24,8 +24,8 @@ from holdon.data.external import load_pose2d, pose2d_path
 from holdon.data.video import read_frame
 from holdon.events import read_events
 from holdon.features.overlap2d import min_distance
+from holdon.evaluation.matching import match_events
 from holdon.models.rules import LIMB_KEYPOINTS
-from holdon.models.track1_tuning import match_events
 from holdon.visualization.overlay import (
     GT_COLOR, PRED_COLOR, draw_holds, draw_keypoints, highlight_holds,
 )

@@ -2,7 +2,14 @@
 
 **Hand/Foot–Hold Contact Detection from Monocular Climbing Video**
 CS 5330 Pattern Recognition and Computer Vision, Fall 2026 — Team 06: Zongyang Li, Yen-Wei Lin, Jinghong Yang
-Repository: https://github.com/zongyang078/HoldOn
+
+**Submission links**
+
+| Deliverable | Link |
+| --- | --- |
+| Prototype and source code (branch `main`; setup and reproduction steps in `README.md`) | https://github.com/zongyang078/HoldOn |
+| Demo videos, slides and slide material (folder `phase2_progress/`) | https://drive.google.com/drive/folders/1XWcjto1pSWkWLWmeqXtztriikkjzU9bY |
+| Dataset copy and versioned pose files | https://drive.google.com/drive/folders/14LDiwWxDYSHDEanNLgf-o8uWpW3GYr23 |
 
 > Numbers come from `docs/phase2_results.md` and, for Track 3, `external/wham/README.md` and
 > `results/tables/track3_wall_pose.md` on the 3D line's branch.
